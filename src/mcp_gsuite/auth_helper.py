@@ -8,7 +8,9 @@ from .gauth import get_stored_credentials
 logger = logging.getLogger(__name__)
 
 
-def get_authenticated_service(service_name: str, version: str, user_id: str, scopes: list[str]):
+def get_authenticated_service(
+    service_name: str, version: str, user_id: str, scopes: list[str]
+):
     """
     Retrieves stored credentials, refreshes if necessary, and builds an authenticated Google API service client.
 
@@ -24,17 +26,27 @@ def get_authenticated_service(service_name: str, version: str, user_id: str, sco
     Raises:
         RuntimeError: If credentials are not found or cannot be refreshed/used.
     """
-    credentials = get_stored_credentials(user_id=user_id)  # Uses settings internally now
+    credentials = get_stored_credentials(
+        user_id=user_id
+    )  # Uses settings internally now
     if not credentials:
-        logger.error(f"No stored OAuth2 credentials found for {user_id}. Please run the authentication flow first.")
-        raise RuntimeError(f"No stored OAuth2 credentials found for {user_id}. Please run the authentication flow.")
+        logger.error(
+            f"No stored OAuth2 credentials found for {user_id}. Please run the authentication flow first."
+        )
+        raise RuntimeError(
+            f"No stored OAuth2 credentials found for {user_id}. Please run the authentication flow."
+        )
 
     try:
         service = build(service_name, version, credentials=credentials)
-        logger.info(f"Successfully built Google service {service_name} v{version} for {user_id}")
+        logger.info(
+            f"Successfully built Google service {service_name} v{version} for {user_id}"
+        )
         return service
     except Exception as e:
-        logger.error(f"Failed to build Google service {service_name} v{version} for {user_id}: {e}")
+        logger.error(
+            f"Failed to build Google service {service_name} v{version} for {user_id}: {e}"
+        )
 
         raise RuntimeError(f"Failed to build Google service for {user_id}.") from e
 
@@ -62,3 +74,13 @@ def get_calendar_service(user_id: str):
 def get_account_info():
     """Gets account information from the configured accounts file."""
     return original_get_account_info()
+
+
+def get_drive_service(user_id: str):
+    """Helper to get an authenticated Drive service client."""
+    drive_scopes = [
+        "https://www.googleapis.com/auth/drive",  # Full access
+        "https://www.googleapis.com/auth/userinfo.email",  # Needed for user info/verification
+        "openid",
+    ]
+    return get_authenticated_service("drive", "v3", user_id, scopes=drive_scopes)
