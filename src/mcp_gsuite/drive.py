@@ -105,7 +105,7 @@ class DriveService:
         self, file_path=None, file_content=None, file_name=None, mime_type=None, parent_folder_id=None
     ) -> dict | None:
         """
-        Upload a file to Google Drive.
+        Upload a file to Google Drive or create a folder.
 
         Args:
             file_path (str, optional): Path to the file to upload
@@ -118,9 +118,33 @@ class DriveService:
             dict: Metadata of the uploaded file or None if upload fails
 
         Note:
-            Either file_path or (file_content and file_name) must be provided
+            - Either file_path or (file_content and file_name) must be provided
+            - For folder creation, set mime_type to "application/vnd.google-apps.folder"
         """
         try:
+            if mime_type == "application/vnd.google-apps.folder":
+                folder_name = file_name
+                if file_path and not folder_name:
+                    folder_name = os.path.basename(file_path)
+                if not folder_name:
+                    folder_name = "New Folder"
+
+                folder_metadata = {"name": folder_name, "mimeType": "application/vnd.google-apps.folder"}
+
+                if parent_folder_id:
+                    folder_metadata["parents"] = [parent_folder_id]
+
+                folder = (
+                    self.service.files()
+                    .create(
+                        body=folder_metadata,
+                        fields="id, name, mimeType, trashed, parents, modifiedTime, webViewLink, iconLink",
+                    )
+                    .execute()
+                )
+
+                return folder
+
             if not file_path and not (file_content and file_name):
                 raise ValueError("Either file_path or (file_content and file_name) must be provided")
 
