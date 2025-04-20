@@ -1,4 +1,4 @@
-.PHONY: lint format test clean install update fix-lint build publish test-publish coverage bump-patch bump-minor bump-major e2e-tests mcp-e2e-tests
+.PHONY: lint format test clean install update fix-lint build publish test-publish coverage bump-patch bump-minor bump-major e2e-tests mcp-e2e-tests setup-pre-commit
 
 # Python version
 PYTHON := python3
@@ -12,6 +12,12 @@ SRC_DIRS := .
 
 # Default target
 all: lint format test
+
+# Setup pre-commit
+setup-pre-commit:
+	@echo "Setting up pre-commit hooks..."
+	uv sync --dev
+	uv run pre-commit install
 
 # Linting
 lint:
