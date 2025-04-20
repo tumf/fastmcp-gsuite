@@ -238,7 +238,7 @@ wheels = [
 
 [[package]]
 name = "fastmcp-gsuite"
-version = "1.0.0"
+version = "1.0.0b0"
 source = { editable = "." }
 dependencies = [
     { name = "beautifulsoup4" },
