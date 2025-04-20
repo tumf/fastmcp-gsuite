@@ -9,8 +9,10 @@ wheels/
 # Virtual environments
 .venv
 .env
+.env.local
 .gauth.json
 oauth2creds.json
 .accounts.json
 .oauth2.*.json
 prompt.txt
+.tmp/
