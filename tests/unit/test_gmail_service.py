@@ -1,5 +1,6 @@
 import base64
 import unittest
+from typing import Any, cast
 from unittest.mock import MagicMock
 
 from src.mcp_gsuite.gmail import GmailService
@@ -106,20 +107,21 @@ class TestGmailService(unittest.TestCase):
         # Parse the message without body
         parsed = self.gmail_service._parse_message(mock_message, parse_body=False)
 
-        # Verify the result
-        self.assertEqual(parsed["id"], "123")
-        self.assertEqual(parsed["threadId"], "thread123")
-        self.assertEqual(parsed["subject"], "Test Subject")
-        self.assertEqual(parsed["from"], "test@example.com")
-        self.assertEqual(parsed["to"], "recipient@example.com")
-        self.assertEqual(parsed["date"], "Mon, 17 May 2021 12:00:00 +0000")
-        self.assertEqual(parsed["cc"], "cc@example.com")
-        self.assertEqual(parsed["bcc"], "bcc@example.com")
-        self.assertEqual(parsed["message_id"], "<message123@example.com>")
-        self.assertEqual(parsed["in_reply_to"], "<parent123@example.com>")
-        self.assertEqual(parsed["references"], "<ref123@example.com>")
-        self.assertEqual(parsed["delivered_to"], "delivered@example.com")
-        self.assertNotIn("body", parsed)
+        # Verify the result - explicitly cast to avoid type errors
+        parsed_dict = cast(dict[str, Any], parsed)
+        self.assertEqual(parsed_dict["id"], "123")
+        self.assertEqual(parsed_dict["threadId"], "thread123")
+        self.assertEqual(parsed_dict["subject"], "Test Subject")
+        self.assertEqual(parsed_dict["from"], "test@example.com")
+        self.assertEqual(parsed_dict["to"], "recipient@example.com")
+        self.assertEqual(parsed_dict["date"], "Mon, 17 May 2021 12:00:00 +0000")
+        self.assertEqual(parsed_dict["cc"], "cc@example.com")
+        self.assertEqual(parsed_dict["bcc"], "bcc@example.com")
+        self.assertEqual(parsed_dict["message_id"], "<message123@example.com>")
+        self.assertEqual(parsed_dict["in_reply_to"], "<parent123@example.com>")
+        self.assertEqual(parsed_dict["references"], "<ref123@example.com>")
+        self.assertEqual(parsed_dict["delivered_to"], "delivered@example.com")
+        self.assertNotIn("body", parsed_dict)
 
     def test_parse_message_with_body(self):
         # Create a mock message with a text/plain body
@@ -137,11 +139,12 @@ class TestGmailService(unittest.TestCase):
         # Parse the message with body
         parsed = self.gmail_service._parse_message(mock_message, parse_body=True)
 
-        # Verify the result
-        self.assertEqual(parsed["id"], "123")
-        self.assertEqual(parsed["subject"], "Test Subject")
-        self.assertEqual(parsed["body"], "Test body")
-        self.assertEqual(parsed["mimeType"], "text/plain")
+        # Verify the result - explicitly cast to avoid type errors
+        parsed_dict = cast(dict[str, Any], parsed)
+        self.assertEqual(parsed_dict["id"], "123")
+        self.assertEqual(parsed_dict["subject"], "Test Subject")
+        self.assertEqual(parsed_dict["body"], "Test body")
+        self.assertEqual(parsed_dict["mimeType"], "text/plain")
 
     def test_extract_body_text_plain(self):
         # Create a mock payload with text/plain body
