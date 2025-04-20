@@ -1,4 +1,5 @@
 import base64
+import datetime
 import json
 import os
 import shutil
@@ -16,9 +17,7 @@ from chuk_mcp.mcp_client.transport.stdio.stdio_server_parameters import (
 )
 
 # Get UV path from environment variables or PATH
-UV_PATH = (
-    os.environ.get("UV_PATH") or shutil.which("uv") or "/Users/tumf/.pyenv/shims/uv"
-)
+UV_PATH = os.environ.get("UV_PATH") or shutil.which("uv") or "/Users/tumf/.pyenv/shims/uv"
 # Temporarily disable skipping for test execution
 # if not UV_PATH:
 #     pytest.skip("uv command not found in PATH or UV_PATH not set")
@@ -35,18 +34,14 @@ def credentials():
     google_client_secret = os.environ.get("GOOGLE_CLIENT_SECRET")
 
     # Verify that authentication information is set
-    assert (
-        credentials_json_str
-    ), "GSUITE_CREDENTIALS_JSON environment variable is not set"
+    assert credentials_json_str, "GSUITE_CREDENTIALS_JSON environment variable is not set"
     assert google_email, "GOOGLE_ACCOUNT_EMAIL environment variable is not set"
     assert google_client_id, "GOOGLE_CLIENT_ID environment variable is not set"
     assert google_client_secret, "GOOGLE_CLIENT_SECRET environment variable is not set"
 
     try:
         # Base64 decode
-        credentials_json_decoded = base64.b64decode(credentials_json_str).decode(
-            "utf-8"
-        )
+        credentials_json_decoded = base64.b64decode(credentials_json_str).decode("utf-8")
         decoded_credentials = json.loads(credentials_json_decoded)
 
         # Required fields for OAuth2Credentials
@@ -56,9 +51,7 @@ def credentials():
             "client_secret": google_client_secret,
             "refresh_token": decoded_credentials.get("refresh_token", ""),
             "token_expiry": decoded_credentials.get("token_expiry", ""),
-            "token_uri": decoded_credentials.get(
-                "token_uri", "https://oauth2.googleapis.com/token"
-            ),
+            "token_uri": decoded_credentials.get("token_uri", "https://oauth2.googleapis.com/token"),
             "user_agent": "fastmcp-gsuite-e2e-tests",
             "revoke_uri": "https://oauth2.googleapis.com/revoke",
             "id_token": None,
@@ -78,7 +71,7 @@ def credentials():
         }
 
     except Exception as e:
-        pytest.fail(f"Failed to decode credentials: {str(e)}")
+        pytest.fail(f"Failed to decode credentials: {e!s}")
 
     # Create temporary credentials file
     credentials_file = ".e2e_test_credentials.json"
@@ -126,9 +119,7 @@ class TestMCPGsuite:
         )
 
         # Set MCP Gsuite server parameters
-        server_params = StdioServerParameters(
-            command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env
-        )
+        server_params = StdioServerParameters(command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env)
 
         # Connect to the server
         async with stdio_client(server_params) as (read_stream, write_stream):
@@ -153,32 +144,16 @@ class TestMCPGsuite:
             print(f"Available tools: {tool_names}")
 
             # Find Gmail related tools (names may vary by environment)
-            gmail_tools = [
-                tool
-                for tool in tools_response["tools"]
-                if "gmail" in tool["name"].lower()
-            ]
-            assert (
-                len(gmail_tools) > 0
-            ), f"No Gmail tools found. Available tools: {tool_names}"
+            gmail_tools = [tool for tool in tools_response["tools"] if "gmail" in tool["name"].lower()]
+            assert len(gmail_tools) > 0, f"No Gmail tools found. Available tools: {tool_names}"
 
             # Find Calendar related tools
-            calendar_tools = [
-                tool
-                for tool in tools_response["tools"]
-                if "calendar" in tool["name"].lower()
-            ]
-            assert (
-                len(calendar_tools) > 0
-            ), f"No Calendar tools found. Available tools: {tool_names}"
+            calendar_tools = [tool for tool in tools_response["tools"] if "calendar" in tool["name"].lower()]
+            assert len(calendar_tools) > 0, f"No Calendar tools found. Available tools: {tool_names}"
 
             # Verify specific tool names (confirmed in previous executions)
-            assert (
-                "query_gmail_emails" in tool_names
-            ), f"query_gmail_emails tool not found in {tool_names}"
-            assert (
-                "list_calendar_events" in tool_names
-            ), f"list_calendar_events tool not found in {tool_names}"
+            assert "query_gmail_emails" in tool_names, f"query_gmail_emails tool not found in {tool_names}"
+            assert "list_calendar_events" in tool_names, f"list_calendar_events tool not found in {tool_names}"
 
     @pytest.mark.e2e
     async def test_gmail_tool_list_messages(self, credentials):
@@ -192,9 +167,7 @@ class TestMCPGsuite:
             }
         )
 
-        server_params = StdioServerParameters(
-            command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env
-        )
+        server_params = StdioServerParameters(command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env)
 
         async with stdio_client(server_params) as (read_stream, write_stream):
             # Initialize
@@ -212,14 +185,10 @@ class TestMCPGsuite:
             )
 
             assert result, "Tool call returned no result"
-            assert not result.get(
-                "isError", False
-            ), f"Tool call returned error: {result}"
+            assert not result.get("isError", False), f"Tool call returned error: {result}"
 
             # Verify that the response is a dictionary
-            assert isinstance(
-                result, dict
-            ), f"Result is not a dictionary: {type(result)}"
+            assert isinstance(result, dict), f"Result is not a dictionary: {type(result)}"
 
             # Verify response
             assert "content" in result, f"No content field in response: {result}"
@@ -251,17 +220,13 @@ class TestMCPGsuite:
             }
         )
 
-        server_params = StdioServerParameters(
-            command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env
-        )
+        server_params = StdioServerParameters(command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env)
 
         async with stdio_client(server_params) as (read_stream, write_stream):
             # Initialize
             await send_initialize(read_stream, write_stream)
 
             # Get current date and get today's events
-            import datetime
-
             today = datetime.datetime.now().strftime("%Y-%m-%d")
 
             # Call Calendar list_events tool
@@ -279,12 +244,8 @@ class TestMCPGsuite:
             )
 
             assert result is not None, "Tool call returned None"
-            assert not result.get(
-                "isError", False
-            ), f"Tool call returned error: {result}"
-            assert isinstance(
-                result, dict
-            ), f"Result is not a dictionary: {type(result)}"
+            assert not result.get("isError", False), f"Tool call returned error: {result}"
+            assert isinstance(result, dict), f"Result is not a dictionary: {type(result)}"
 
             # Verify response
             assert "content" in result, f"No content field in response: {result}"
@@ -302,3 +263,434 @@ class TestMCPGsuite:
 
             # There may be no events, so if JSON parsing is successful, it's OK
             # assert has_events, f"No valid event JSON found in response: {result}"
+
+    @pytest.mark.e2e
+    async def test_gmail_create_draft(self, credentials):
+        """Test Gmail tool for creating a draft email"""
+        # Get parent process environment variables and add necessary variables
+        env = os.environ.copy()
+        env.update(
+            {
+                "GSUITE_CREDENTIALS_FILE": credentials["credentials_file"],
+                "GSUITE_EMAIL": credentials["email"],
+            }
+        )
+
+        server_params = StdioServerParameters(command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env)
+
+        async with stdio_client(server_params) as (read_stream, write_stream):
+            # Initialize
+            await send_initialize(read_stream, write_stream)
+
+            # Create a draft email
+            result = await send_tools_call(
+                read_stream,
+                write_stream,
+                name="create_gmail_draft",
+                arguments={
+                    "to": credentials["email"],  # Send to self for testing
+                    "subject": "E2E Test Draft - " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "body": "This is a test draft email created by the E2E test.",
+                    "user_id": credentials["email"],
+                },
+            )
+
+            assert result is not None, "Tool call returned None"
+            assert not result.get("isError", False), f"Tool call returned error: {result}"
+
+            # Verify response
+            assert "content" in result, f"No content field in response: {result}"
+            assert len(result["content"]) > 0, f"Empty content in response: {result}"
+
+            # Extract draft ID for use in delete test
+            draft_id = None
+            for item in result["content"]:
+                if item.get("type") == "text" and item.get("text"):
+                    try:
+                        draft_data = json.loads(item.get("text"))
+                        if isinstance(draft_data, dict) and "id" in draft_data:
+                            draft_id = draft_data["id"]
+                            break
+                    except json.JSONDecodeError:
+                        continue
+
+            assert draft_id, "Failed to extract draft ID from response"
+
+            # Store draft ID in environment variable for use by delete test
+            os.environ["E2E_TEST_DRAFT_ID"] = draft_id
+
+            return draft_id
+
+    @pytest.mark.e2e
+    async def test_gmail_delete_draft(self, credentials):
+        """Test Gmail tool for deleting a draft email"""
+        # Get parent process environment variables and add necessary variables
+        env = os.environ.copy()
+        env.update(
+            {
+                "GSUITE_CREDENTIALS_FILE": credentials["credentials_file"],
+                "GSUITE_EMAIL": credentials["email"],
+            }
+        )
+
+        # Get draft ID from previous test or create a new draft
+        draft_id = os.environ.get("E2E_TEST_DRAFT_ID")
+        if not draft_id:
+            draft_id = await self.test_gmail_create_draft(credentials)
+
+        server_params = StdioServerParameters(command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env)
+
+        async with stdio_client(server_params) as (read_stream, write_stream):
+            # Initialize
+            await send_initialize(read_stream, write_stream)
+
+            # Delete the draft email
+            result = await send_tools_call(
+                read_stream,
+                write_stream,
+                name="delete_gmail_draft",
+                arguments={
+                    "draft_id": draft_id,
+                    "user_id": credentials["email"],
+                },
+            )
+
+            assert result is not None, "Tool call returned None"
+            assert not result.get("isError", False), f"Tool call returned error: {result}"
+
+            # Verify response content indicates successful deletion
+            assert "content" in result, f"No content field in response: {result}"
+            assert len(result["content"]) > 0, f"Empty content in response: {result}"
+
+            success = False
+            for item in result["content"]:
+                if item.get("type") == "text" and item.get("text"):
+                    if "Successfully deleted draft" in item.get("text"):
+                        success = True
+                        break
+
+            assert success, f"Expected successful deletion message, got: {result}"
+
+            # Clean up environment variable
+            if "E2E_TEST_DRAFT_ID" in os.environ:
+                del os.environ["E2E_TEST_DRAFT_ID"]
+
+    @pytest.mark.e2e
+    async def test_gmail_reply(self, credentials):
+        """Test Gmail tool for replying to an email"""
+        # Get parent process environment variables and add necessary variables
+        env = os.environ.copy()
+        env.update(
+            {
+                "GSUITE_CREDENTIALS_FILE": credentials["credentials_file"],
+                "GSUITE_EMAIL": credentials["email"],
+            }
+        )
+
+        server_params = StdioServerParameters(command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env)
+
+        async with stdio_client(server_params) as (read_stream, write_stream):
+            # Initialize
+            await send_initialize(read_stream, write_stream)
+
+            # First, get a message to reply to
+            result = await send_tools_call(
+                read_stream,
+                write_stream,
+                name="query_gmail_emails",
+                arguments={
+                    "max_results": 1,  # Get latest email
+                    "user_id": credentials["email"],
+                },
+            )
+
+            assert result is not None, "Tool call to get messages returned None"
+
+            # Extract message ID
+            message_id = None
+            for item in result["content"]:
+                if item.get("type") == "text" and item.get("text"):
+                    try:
+                        message_data = json.loads(item.get("text"))
+                        if isinstance(message_data, dict) and "id" in message_data:
+                            message_id = message_data["id"]
+                            break
+                    except json.JSONDecodeError:
+                        continue
+
+            assert message_id, "Failed to find a message to reply to"
+
+            # Create a reply (as draft to avoid sending actual emails in tests)
+            result = await send_tools_call(
+                read_stream,
+                write_stream,
+                name="create_gmail_reply",
+                arguments={
+                    "original_message_id": message_id,
+                    "reply_body": "This is an automated test reply. Please ignore.",
+                    "send": False,  # Save as draft, don't actually send
+                    "user_id": credentials["email"],
+                },
+            )
+
+            assert result is not None, "Reply tool call returned None"
+            assert not result.get("isError", False), f"Reply tool call returned error: {result}"
+
+            # Verify response
+            assert "content" in result, f"No content field in response: {result}"
+            assert len(result["content"]) > 0, f"Empty content in response: {result}"
+
+            # Extract draft ID from response to clean up
+            draft_id = None
+            for item in result["content"]:
+                if item.get("type") == "text" and item.get("text"):
+                    try:
+                        reply_data = json.loads(item.get("text"))
+                        if isinstance(reply_data, dict) and "id" in reply_data:
+                            draft_id = reply_data["id"]
+                            break
+                    except json.JSONDecodeError:
+                        continue
+
+            # If we got a draft ID, clean it up
+            if draft_id:
+                # Delete the draft reply
+                await send_tools_call(
+                    read_stream,
+                    write_stream,
+                    name="delete_gmail_draft",
+                    arguments={
+                        "draft_id": draft_id,
+                        "user_id": credentials["email"],
+                    },
+                )
+
+    @pytest.mark.e2e
+    async def test_gmail_get_attachment(self, credentials):
+        """Test Gmail tool for getting an attachment"""
+        # Get parent process environment variables and add necessary variables
+        env = os.environ.copy()
+        env.update(
+            {
+                "GSUITE_CREDENTIALS_FILE": credentials["credentials_file"],
+                "GSUITE_EMAIL": credentials["email"],
+            }
+        )
+
+        server_params = StdioServerParameters(command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env)
+
+        async with stdio_client(server_params) as (read_stream, write_stream):
+            # Initialize
+            await send_initialize(read_stream, write_stream)
+
+            # First, find messages with attachments
+            result = await send_tools_call(
+                read_stream,
+                write_stream,
+                name="query_gmail_emails",
+                arguments={
+                    "query": "has:attachment",  # Search for emails with attachments
+                    "max_results": 5,
+                    "user_id": credentials["email"],
+                },
+            )
+
+            assert result is not None, "Tool call to get messages returned None"
+
+            # Find a message with attachments
+            message_id = None
+            for item in result["content"]:
+                if item.get("type") == "text" and item.get("text"):
+                    try:
+                        message_data = json.loads(item.get("text"))
+                        if isinstance(message_data, dict) and "id" in message_data:
+                            message_id = message_data["id"]
+                            break
+                    except json.JSONDecodeError:
+                        continue
+
+            # Skip test if no messages with attachments are found
+            if not message_id:
+                pytest.skip("No messages with attachments found to test with")
+
+            # Get full email details to find attachment IDs
+            result = await send_tools_call(
+                read_stream,
+                write_stream,
+                name="get_email_details",
+                arguments={
+                    "email_id": message_id,
+                    "user_id": credentials["email"],
+                },
+            )
+
+            assert result is not None, "Tool call to get email details returned None"
+
+            # Extract attachment ID
+            attachment_id = None
+            for item in result["content"]:
+                if item.get("type") == "text" and item.get("text"):
+                    try:
+                        email_data = json.loads(item.get("text"))
+                        if isinstance(email_data, dict) and "attachments" in email_data:
+                            attachments = email_data["attachments"]
+                            if attachments and len(attachments) > 0:
+                                # Get the first attachment ID
+                                first_attachment_key = next(iter(attachments.keys()))
+                                attachment_id = attachments[first_attachment_key].get("attachmentId")
+                                break
+                    except (json.JSONDecodeError, IndexError, KeyError):
+                        continue
+
+            # Skip test if no attachment ID found
+            if not attachment_id:
+                pytest.skip("No attachment ID found in the emails")
+
+            # Get the attachment
+            result = await send_tools_call(
+                read_stream,
+                write_stream,
+                name="get_gmail_attachment",
+                arguments={
+                    "message_id": message_id,
+                    "attachment_id": attachment_id,
+                    "user_id": credentials["email"],
+                },
+            )
+
+            assert result is not None, "Attachment tool call returned None"
+            assert not result.get("isError", False), f"Attachment tool call returned error: {result}"
+
+            # Verify response
+            assert "content" in result, f"No content field in response: {result}"
+            assert len(result["content"]) > 0, f"Empty content in response: {result}"
+
+            # Verify attachment data is in the response
+            has_attachment_data = False
+            for item in result["content"]:
+                if item.get("type") == "text" and item.get("text"):
+                    try:
+                        attachment_data = json.loads(item.get("text"))
+                        if isinstance(attachment_data, dict) and "data" in attachment_data:
+                            has_attachment_data = True
+                            break
+                    except json.JSONDecodeError:
+                        continue
+
+            assert has_attachment_data, f"No attachment data found in response: {result}"
+
+    @pytest.mark.e2e
+    async def test_bulk_save_gmail_attachments(self, credentials):
+        """Test Gmail tool for bulk saving attachments"""
+        # Get parent process environment variables and add necessary variables
+        env = os.environ.copy()
+        env.update(
+            {
+                "GSUITE_CREDENTIALS_FILE": credentials["credentials_file"],
+                "GSUITE_EMAIL": credentials["email"],
+            }
+        )
+
+        server_params = StdioServerParameters(command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env)
+
+        async with stdio_client(server_params) as (read_stream, write_stream):
+            # Initialize
+            await send_initialize(read_stream, write_stream)
+
+            # First, find messages with attachments
+            result = await send_tools_call(
+                read_stream,
+                write_stream,
+                name="query_gmail_emails",
+                arguments={
+                    "query": "has:attachment",  # Search for emails with attachments
+                    "max_results": 5,
+                    "user_id": credentials["email"],
+                },
+            )
+
+            assert result is not None, "Tool call to get messages returned None"
+
+            # Find a message with attachments
+            message_id = None
+            for item in result["content"]:
+                if item.get("type") == "text" and item.get("text"):
+                    try:
+                        message_data = json.loads(item.get("text"))
+                        if isinstance(message_data, dict) and "id" in message_data:
+                            message_id = message_data["id"]
+                            break
+                    except json.JSONDecodeError:
+                        continue
+
+            # Skip test if no messages with attachments are found
+            if not message_id:
+                pytest.skip("No messages with attachments found to test with")
+
+            # Get full email details to find attachment IDs
+            result = await send_tools_call(
+                read_stream,
+                write_stream,
+                name="get_email_details",
+                arguments={
+                    "email_id": message_id,
+                    "user_id": credentials["email"],
+                },
+            )
+
+            assert result is not None, "Tool call to get email details returned None"
+
+            # Extract attachment information
+            attachment_info = []
+            for item in result["content"]:
+                if item.get("type") == "text" and item.get("text"):
+                    try:
+                        email_data = json.loads(item.get("text"))
+                        if isinstance(email_data, dict) and "attachments" in email_data:
+                            attachments = email_data["attachments"]
+                            if attachments and len(attachments) > 0:
+                                # Get the first attachment
+                                first_attachment_key = next(iter(attachments.keys()))
+                                attachment = attachments[first_attachment_key]
+
+                                attachment_info.append(
+                                    {
+                                        "message_id": message_id,
+                                        "attachment_id": attachment.get("attachmentId"),
+                                        "save_path": f"/tmp/test_attachment_{first_attachment_key}.tmp",
+                                    }
+                                )
+                                break
+                    except (json.JSONDecodeError, IndexError, KeyError):
+                        continue
+
+            # Skip test if no attachment info created
+            if not attachment_info:
+                pytest.skip("No attachment information found in the emails")
+
+            # Call bulk save attachments tool
+            result = await send_tools_call(
+                read_stream,
+                write_stream,
+                name="bulk_save_gmail_attachments",
+                arguments={
+                    "attachments": attachment_info,
+                    "user_id": credentials["email"],
+                },
+            )
+
+            assert result is not None, "Bulk save tool call returned None"
+            assert not result.get("isError", False), f"Bulk save tool call returned error: {result}"
+
+            # Verify response
+            assert "content" in result, f"No content field in response: {result}"
+            assert len(result["content"]) > 0, f"Empty content in response: {result}"
+
+            # Verify the response content (should be processing status messages)
+            has_response = False
+            for item in result["content"]:
+                if item.get("type") == "text" and item.get("text"):
+                    has_response = True
+                    break
+
+            assert has_response, f"No text content in response: {result}"

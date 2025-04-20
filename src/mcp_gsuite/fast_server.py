@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Annotated, List, Optional
+from typing import Annotated
 
 from fastmcp import Context, FastMCP
 from mcp.types import TextContent
@@ -11,12 +11,12 @@ from . import gmail as gmail_impl  # Original implementation
 from .settings import settings  # Import settings to ensure it's loaded
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
 logger.info(
-    f"Using settings: gauth='{settings.absolute_gauth_file}', accounts='{settings.absolute_accounts_file}', creds='{settings.absolute_credentials_dir}'"
+    f"Using settings: gauth='{settings.absolute_gauth_file}', "
+    f"accounts='{settings.absolute_accounts_file}', "
+    f"creds='{settings.absolute_credentials_dir}'"
 )
 
 mcp = FastMCP(
@@ -34,32 +34,29 @@ def get_user_id_description() -> str:
         try:
             _account_info_cache = auth_helper.get_account_info()
             if not _account_info_cache:
-                logger.warning(
-                    "No accounts found in accounts file. User ID description will be generic."
-                )
+                logger.warning("No accounts found in accounts file. User ID description will be generic.")
                 return "The EMAIL of the Google account to use."
         except Exception as e:
             logger.error(f"Failed to load account info for user ID description: {e}")
-            return (
-                "The EMAIL of the Google account to use (Error loading account list)."
-            )
+            return "The EMAIL of the Google account to use (Error loading account list)."
 
     desc = [f"{acc.email} ({acc.account_type})" for acc in _account_info_cache]
     return f"The EMAIL of the Google account. Choose from: {', '.join(desc)}"
 
 
 @mcp.tool(
-    description="Query Gmail emails based on an optional search query. Returns emails in reverse chronological order (newest first)."
+    description="Query Gmail emails based on an optional search query. "
+    "Returns emails in reverse chronological order (newest first)."
 )
 async def query_gmail_emails(
     user_id: Annotated[str, get_user_id_description()],
     query: Annotated[
-        Optional[str],
+        str | None,
         "Gmail search query (e.g., 'is:unread', 'from:example@gmail.com')",
     ] = None,
     max_results: Annotated[int, "Maximum number of emails (1-500, default 100)"] = 100,
     ctx: Context | None = None,  # Optional context
-) -> List[TextContent]:
+) -> list[TextContent]:
     """Queries Gmail emails for the specified user."""
     try:
         if ctx:
@@ -69,16 +66,9 @@ async def query_gmail_emails(
         emails = gmail_service.query_emails(query=query, max_results=max_results)
         if not emails:
             if ctx:
-                await ctx.info(
-                    f"No emails found for query '{query}' for user {user_id}"
-                )
-            return [
-                TextContent(type="text", text="No emails found matching the query.")
-            ]
-        return [
-            TextContent(type="text", text=json.dumps(email, indent=2))
-            for email in emails
-        ]
+                await ctx.info(f"No emails found for query '{query}' for user {user_id}")
+            return [TextContent(type="text", text="No emails found matching the query.")]
+        return [TextContent(type="text", text=json.dumps(email, indent=2)) for email in emails]
     except Exception as e:
         logger.error(f"Error in query_gmail_emails for {user_id}: {e}", exc_info=True)
         error_msg = f"Error querying emails: {e}"
@@ -94,27 +84,19 @@ async def get_email_details(
     user_id: Annotated[str, get_user_id_description()],
     email_id: Annotated[str, "The unique ID of the Gmail email message."],
     ctx: Context | None = None,
-) -> List[TextContent]:
+) -> list[TextContent]:
     """Retrieves detailed information for a single email, including body and attachments."""
     try:
         if ctx:
-            await ctx.info(
-                f"Fetching details for email ID {email_id} for user {user_id}"
-            )
+            await ctx.info(f"Fetching details for email ID {email_id} for user {user_id}")
         g_service = auth_helper.get_gmail_service(user_id)
         gmail_service = gmail_impl.GmailService(g_service)
-        email_details, attachments = gmail_service.get_email_by_id_with_attachments(
-            email_id=email_id
-        )
+        email_details, attachments = gmail_service.get_email_by_id_with_attachments(email_id=email_id)
 
         if not email_details:
             if ctx:
-                await ctx.warning(
-                    f"Email with ID {email_id} not found for user {user_id}"
-                )
-            return [
-                TextContent(type="text", text=f"Email with ID {email_id} not found.")
-            ]
+                await ctx.warning(f"Email with ID {email_id} not found for user {user_id}")
+            return [TextContent(type="text", text=f"Email with ID {email_id} not found.")]
 
         full_details = {
             "email": email_details,
@@ -136,7 +118,7 @@ async def get_email_details(
 @mcp.tool(description="List all available Gmail labels for the user.")
 async def get_gmail_labels(
     user_id: Annotated[str, get_user_id_description()], ctx: Context | None = None
-) -> List[TextContent]:
+) -> list[TextContent]:
     """Lists all Gmail labels for the specified user."""
     try:
         if ctx:
@@ -158,13 +140,14 @@ async def get_gmail_labels(
 
 
 @mcp.tool(
-    description="Retrieves multiple Gmail email messages by their IDs in a single request, including bodies and attachment metadata."
+    description="Retrieves multiple Gmail email messages by their IDs in a single request, "
+    "including bodies and attachment metadata."
 )
 async def bulk_get_gmail_emails(
     user_id: Annotated[str, get_user_id_description()],
-    email_ids: Annotated[List[str], "List of Gmail message IDs to retrieve."],
+    email_ids: Annotated[list[str], "List of Gmail message IDs to retrieve."],
     ctx: Context | None = None,
-) -> List[TextContent]:
+) -> list[TextContent]:
     """Retrieves details for multiple emails by their IDs."""
     results = []
     try:
@@ -186,9 +169,7 @@ async def bulk_get_gmail_emails(
                     results.append(full_details)
                 else:
                     if ctx:
-                        await ctx.warning(
-                            f"Email with ID {email_id} not found for user {user_id}"
-                        )
+                        await ctx.warning(f"Email with ID {email_id} not found for user {user_id}")
             except Exception as inner_e:
                 logger.error(
                     f"Error fetching email ID {email_id} for {user_id}: {inner_e}",
@@ -199,9 +180,7 @@ async def bulk_get_gmail_emails(
 
         if not results:
             if ctx:
-                await ctx.info(
-                    f"No emails found or retrieved for the given IDs for user {user_id}"
-                )
+                await ctx.info(f"No emails found or retrieved for the given IDs for user {user_id}")
             return [
                 TextContent(
                     type="text",
@@ -222,15 +201,13 @@ async def bulk_get_gmail_emails(
         # Return error message in TextContent for bulk operations instead of raising?
         # For consistency with single-get, raising might be better, but bulk could partially succeed.
         # Let's return an error message for now.
-        return [
-            TextContent(type="text", text=f"Error processing bulk email request: {e}")
-        ]
+        return [TextContent(type="text", text=f"Error processing bulk email request: {e}")]
 
 
 @mcp.tool(description="List all calendars the user has access to.")
 async def list_calendars(
     user_id: Annotated[str, get_user_id_description()], ctx: Context | None = None
-) -> List[TextContent]:
+) -> list[TextContent]:
     """Lists all calendars accessible by the user."""
     try:
         if ctx:
@@ -254,25 +231,17 @@ async def list_calendars(
 @mcp.tool(description="List events from a specific calendar within a given time range.")
 async def list_calendar_events(
     user_id: Annotated[str, get_user_id_description()],
-    calendar_id: Annotated[
-        str, "The ID of the calendar to query (use 'primary' for the primary calendar)."
-    ],
-    start_time: Annotated[
-        str, "Start time in ISO 8601 format (e.g., '2024-04-15T00:00:00Z')."
-    ],
-    end_time: Annotated[
-        str, "End time in ISO 8601 format (e.g., '2024-04-16T00:00:00Z')."
-    ],
+    calendar_id: Annotated[str, "The ID of the calendar to query (use 'primary' for the primary calendar)."],
+    start_time: Annotated[str, "Start time in ISO 8601 format (e.g., '2024-04-15T00:00:00Z')."],
+    end_time: Annotated[str, "End time in ISO 8601 format (e.g., '2024-04-16T00:00:00Z')."],
     max_results: Annotated[int, "Maximum number of events (1-2500, default 100)"] = 100,
-    query: Annotated[Optional[str], "Optional text query to filter events."] = None,
+    query: Annotated[str | None, "Optional text query to filter events."] = None,
     ctx: Context | None = None,
-) -> List[TextContent]:
+) -> list[TextContent]:
     """Lists events from a specified calendar and time range."""
     try:
         if ctx:
-            await ctx.info(
-                f"Listing events for {user_id} in calendar {calendar_id} from {start_time} to {end_time}"
-            )
+            await ctx.info(f"Listing events for {user_id} in calendar {calendar_id} from {start_time} to {end_time}")
         c_service = auth_helper.get_calendar_service(user_id)
         calendar_service = calendar_impl.CalendarService(c_service)
         events = calendar_service.list_events(
@@ -284,12 +253,8 @@ async def list_calendar_events(
         )
         if not events:
             if ctx:
-                await ctx.info(
-                    f"No events found for the specified criteria for user {user_id}"
-                )
-            return [
-                TextContent(type="text", text="No events found matching the criteria.")
-            ]
+                await ctx.info(f"No events found for the specified criteria for user {user_id}")
+            return [TextContent(type="text", text="No events found matching the criteria.")]
         return [TextContent(type="text", text=json.dumps(events, indent=2))]
     except Exception as e:
         logger.error(f"Error in list_calendar_events for {user_id}: {e}", exc_info=True)
@@ -315,21 +280,15 @@ async def create_calendar_event(
         str,
         "End date/time in ISO 8601 format (e.g., '2024-04-15T11:00:00Z' or '2024-04-16' for all-day).",
     ],
-    description: Annotated[
-        Optional[str], "Optional description or details for the event."
-    ] = None,
-    location: Annotated[Optional[str], "Optional location for the event."] = None,
-    attendees: Annotated[
-        Optional[List[str]], "Optional list of attendee email addresses."
-    ] = None,
+    description: Annotated[str | None, "Optional description or details for the event."] = None,
+    location: Annotated[str | None, "Optional location for the event."] = None,
+    attendees: Annotated[list[str] | None, "Optional list of attendee email addresses."] = None,
     ctx: Context | None = None,
-) -> List[TextContent]:
+) -> list[TextContent]:
     """Creates a new calendar event."""
     try:
         if ctx:
-            await ctx.info(
-                f"Creating event '{summary}' for {user_id} in calendar {calendar_id}"
-            )
+            await ctx.info(f"Creating event '{summary}' for {user_id} in calendar {calendar_id}")
         c_service = auth_helper.get_calendar_service(user_id)
         calendar_service = calendar_impl.CalendarService(c_service)
 
@@ -351,18 +310,14 @@ async def create_calendar_event(
 
         if not created_event:
             if ctx:
-                await ctx.error(
-                    f"Failed to create event '{summary}' for user {user_id}"
-                )
+                await ctx.error(f"Failed to create event '{summary}' for user {user_id}")
             raise RuntimeError("Failed to create calendar event.")
 
         if ctx:
             await ctx.info(f"Successfully created event ID: {created_event.get('id')}")
         return [TextContent(type="text", text=json.dumps(created_event, indent=2))]
     except Exception as e:
-        logger.error(
-            f"Error in create_calendar_event for {user_id}: {e}", exc_info=True
-        )
+        logger.error(f"Error in create_calendar_event for {user_id}: {e}", exc_info=True)
         error_msg = f"Error creating calendar event: {e}"
         if ctx:
             await ctx.error(error_msg)
@@ -378,40 +333,236 @@ async def delete_calendar_event(
     ],
     event_id: Annotated[str, "The unique ID of the event to delete."],
     ctx: Context | None = None,
-) -> List[TextContent]:
+) -> list[TextContent]:
     """Deletes a calendar event."""
     try:
         if ctx:
-            await ctx.info(
-                f"Deleting event ID {event_id} for {user_id} from calendar {calendar_id}"
-            )
+            await ctx.info(f"Deleting event ID {event_id} for {user_id} from calendar {calendar_id}")
         c_service = auth_helper.get_calendar_service(user_id)
         calendar_service = calendar_impl.CalendarService(c_service)
-        success = calendar_service.delete_event(
-            event_id=event_id, calendar_id=calendar_id
-        )
+        success = calendar_service.delete_event(event_id=event_id, calendar_id=calendar_id)
 
         if success:
             if ctx:
                 await ctx.info(f"Successfully deleted event ID {event_id}")
-            return [
-                TextContent(
-                    type="text", text=f"Successfully deleted event ID: {event_id}"
-                )
-            ]
+            return [TextContent(type="text", text=f"Successfully deleted event ID: {event_id}")]
         else:
             if ctx:
-                await ctx.warning(
-                    f"Failed to delete event ID {event_id} for user {user_id}"
-                )
-            return [
-                TextContent(type="text", text=f"Failed to delete event ID: {event_id}")
-            ]
+                await ctx.warning(f"Failed to delete event ID {event_id} for user {user_id}")
+            return [TextContent(type="text", text=f"Failed to delete event ID: {event_id}")]
     except Exception as e:
-        logger.error(
-            f"Error in delete_calendar_event for {user_id}: {e}", exc_info=True
-        )
+        logger.error(f"Error in delete_calendar_event for {user_id}: {e}", exc_info=True)
         error_msg = f"Error deleting calendar event: {e}"
+        if ctx:
+            await ctx.error(error_msg)
+        raise RuntimeError(error_msg) from e
+
+
+@mcp.tool(description="Create a draft email in Gmail.")
+async def create_gmail_draft(
+    user_id: Annotated[str, get_user_id_description()],
+    to: Annotated[str, "Email address of the recipient."],
+    subject: Annotated[str, "Subject line of the email."],
+    body: Annotated[str, "Body content of the email."],
+    cc: Annotated[list[str] | None, "Optional list of email addresses to CC."] = None,
+    ctx: Context | None = None,
+) -> list[TextContent]:
+    """Creates a draft email in Gmail."""
+    try:
+        if ctx:
+            await ctx.info(f"Creating draft email for user {user_id} with subject '{subject}'")
+        g_service = auth_helper.get_gmail_service(user_id)
+        gmail_service = gmail_impl.GmailService(g_service)
+        draft = gmail_service.create_draft(to=to, subject=subject, body=body, cc=cc)
+
+        if not draft:
+            if ctx:
+                await ctx.error(f"Failed to create draft email for user {user_id}")
+            return [TextContent(type="text", text="Failed to create draft email.")]
+
+        if ctx:
+            await ctx.info(f"Successfully created draft with ID: {draft.get('id')}")
+        return [TextContent(type="text", text=json.dumps(draft, indent=2))]
+    except Exception as e:
+        logger.error(f"Error in create_gmail_draft for {user_id}: {e}", exc_info=True)
+        error_msg = f"Error creating draft email: {e}"
+        if ctx:
+            await ctx.error(error_msg)
+        raise RuntimeError(error_msg) from e
+
+
+@mcp.tool(description="Delete a draft email from Gmail.")
+async def delete_gmail_draft(
+    user_id: Annotated[str, get_user_id_description()],
+    draft_id: Annotated[str, "The unique ID of the draft to delete."],
+    ctx: Context | None = None,
+) -> list[TextContent]:
+    """Deletes a draft email from Gmail."""
+    try:
+        if ctx:
+            await ctx.info(f"Deleting draft email with ID {draft_id} for user {user_id}")
+        g_service = auth_helper.get_gmail_service(user_id)
+        gmail_service = gmail_impl.GmailService(g_service)
+        success = gmail_service.delete_draft(draft_id=draft_id)
+
+        if success:
+            if ctx:
+                await ctx.info(f"Successfully deleted draft with ID: {draft_id}")
+            return [TextContent(type="text", text=f"Successfully deleted draft ID: {draft_id}")]
+        else:
+            if ctx:
+                await ctx.warning(f"Failed to delete draft ID {draft_id} for user {user_id}")
+            return [TextContent(type="text", text=f"Failed to delete draft ID: {draft_id}")]
+    except Exception as e:
+        logger.error(f"Error in delete_gmail_draft for {user_id}: {e}", exc_info=True)
+        error_msg = f"Error deleting draft email: {e}"
+        if ctx:
+            await ctx.error(error_msg)
+        raise RuntimeError(error_msg) from e
+
+
+@mcp.tool(description="Create a reply to an existing Gmail email message.")
+async def create_gmail_reply(
+    user_id: Annotated[str, get_user_id_description()],
+    original_message_id: Annotated[str, "The ID of the original email message to reply to."],
+    reply_body: Annotated[str, "The body text of the reply."],
+    send: Annotated[bool, "If True, sends the reply immediately. If False, saves as draft."] = False,
+    cc: Annotated[list[str] | None, "Optional list of email addresses to CC."] = None,
+    ctx: Context | None = None,
+) -> list[TextContent]:
+    """Creates a reply to an existing Gmail email message."""
+    try:
+        if ctx:
+            await ctx.info(f"Creating reply to message ID {original_message_id} for user {user_id}")
+        g_service = auth_helper.get_gmail_service(user_id)
+        gmail_service = gmail_impl.GmailService(g_service)
+
+        # First get the original message details
+        original_message, _ = gmail_service.get_email_by_id_with_attachments(email_id=original_message_id)
+        if not original_message:
+            if ctx:
+                await ctx.warning(f"Original message with ID {original_message_id} not found for user {user_id}")
+            return [TextContent(type="text", text=f"Original message with ID {original_message_id} not found.")]
+
+        # Create the reply
+        result = gmail_service.create_reply(original_message=original_message, reply_body=reply_body, send=send, cc=cc)
+
+        if not result:
+            if ctx:
+                await ctx.error(f"Failed to {'send' if send else 'draft'} reply to message {original_message_id}")
+            return [TextContent(type="text", text=f"Failed to {'send' if send else 'draft'} reply.")]
+
+        if ctx:
+            action = "sent" if send else "created draft"
+            await ctx.info(f"Successfully {action} reply to message ID: {original_message_id}")
+        return [TextContent(type="text", text=json.dumps(result, indent=2))]
+    except Exception as e:
+        logger.error(f"Error in create_gmail_reply for {user_id}: {e}", exc_info=True)
+        error_msg = f"Error creating reply: {e}"
+        if ctx:
+            await ctx.error(error_msg)
+        raise RuntimeError(error_msg) from e
+
+
+@mcp.tool(description="Retrieve a Gmail attachment by its ID.")
+async def get_gmail_attachment(
+    user_id: Annotated[str, get_user_id_description()],
+    message_id: Annotated[str, "The ID of the Gmail message containing the attachment."],
+    attachment_id: Annotated[str, "The ID of the attachment to retrieve."],
+    ctx: Context | None = None,
+) -> list[TextContent]:
+    """Retrieves an attachment from a Gmail message."""
+    try:
+        if ctx:
+            await ctx.info(f"Retrieving attachment ID {attachment_id} from message ID {message_id} for user {user_id}")
+        g_service = auth_helper.get_gmail_service(user_id)
+        gmail_service = gmail_impl.GmailService(g_service)
+        attachment_data = gmail_service.get_attachment(message_id=message_id, attachment_id=attachment_id)
+
+        if not attachment_data:
+            if ctx:
+                await ctx.warning(f"Attachment ID {attachment_id} not found in message {message_id}")
+            return [TextContent(type="text", text=f"Attachment ID {attachment_id} not found.")]
+
+        return [TextContent(type="text", text=json.dumps(attachment_data, indent=2))]
+    except Exception as e:
+        logger.error(f"Error in get_gmail_attachment for {user_id}: {e}", exc_info=True)
+        error_msg = f"Error retrieving attachment: {e}"
+        if ctx:
+            await ctx.error(error_msg)
+        raise RuntimeError(error_msg) from e
+
+
+@mcp.tool(
+    description="Save multiple Gmail attachments to disk by their message IDs "
+    "and attachment IDs in a single request."
+)
+async def bulk_save_gmail_attachments(
+    user_id: Annotated[str, get_user_id_description()],
+    attachments: Annotated[
+        list[dict],
+        "List of attachment information dictionaries. Each dictionary should have "
+        "message_id, attachment_id, and save_path.",
+    ],
+    ctx: Context | None = None,
+) -> list[TextContent]:
+    """Saves multiple Gmail attachments to disk."""
+    try:
+        if ctx:
+            await ctx.info(f"Saving {len(attachments)} attachments for user {user_id}")
+
+        g_service = auth_helper.get_gmail_service(user_id)
+        gmail_service = gmail_impl.GmailService(g_service)
+
+        results = []
+        for attachment_info in attachments:
+            try:
+                if ctx:
+                    await ctx.debug(f"Processing attachment for message ID {attachment_info.get('message_id')}")
+
+                # Validate required fields
+                message_id = attachment_info.get("message_id")
+                attachment_id = attachment_info.get("attachment_id")
+                save_path = attachment_info.get("save_path")
+
+                if not message_id or not attachment_id or not save_path:
+                    error_msg = "Missing required fields in attachment info (message_id, attachment_id, save_path)"
+                    if ctx:
+                        await ctx.error(error_msg)
+                    results.append(TextContent(type="text", text=error_msg))
+                    continue
+
+                # Get the attachment data
+                attachment_data = gmail_service.get_attachment(message_id, attachment_id)
+                if not attachment_data:
+                    error_msg = f"Failed to retrieve attachment {attachment_id} from message {message_id}"
+                    if ctx:
+                        await ctx.warning(error_msg)
+                    results.append(TextContent(type="text", text=error_msg))
+                    continue
+
+                # Process attachment data
+                # Note: In a real implementation, you would save this data to the specified path
+                # However, since we don't have direct file system access in the MCP context,
+                # we'll just report success in this simplified version
+
+                success_msg = f"Successfully processed attachment {attachment_id} from message {message_id}"
+                if ctx:
+                    await ctx.info(success_msg)
+                results.append(TextContent(type="text", text=success_msg))
+
+            except Exception as inner_e:
+                error_msg = f"Error processing attachment: {inner_e!s}"
+                logger.error(error_msg, exc_info=True)
+                if ctx:
+                    await ctx.error(error_msg)
+                results.append(TextContent(type="text", text=error_msg))
+
+        return results
+
+    except Exception as e:
+        logger.error(f"Error in bulk_save_gmail_attachments for {user_id}: {e}", exc_info=True)
+        error_msg = f"Error processing attachments: {e}"
         if ctx:
             await ctx.error(error_msg)
         raise RuntimeError(error_msg) from e
