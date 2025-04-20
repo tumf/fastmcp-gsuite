@@ -348,3 +348,26 @@ class TestGmailTools(unittest.TestCase):
         mock_get_gmail_service.assert_called_once_with(self.test_user_id)
         mock_gmail_service_class.assert_called_once_with(mock_service)
         mock_gmail_service_instance.get_attachment.assert_called_once_with(self.test_email_id, self.test_attachment_id)
+
+    @patch("src.mcp_gsuite.gmail_tools.auth_helper.get_gmail_service")
+    @patch("src.mcp_gsuite.gmail_tools.gmail_impl.GmailService")
+    async def test_query_gmail_emails_error(self, mock_gmail_service_class, mock_get_gmail_service):
+        """Test error handling in query_gmail_emails."""
+        mock_service = MagicMock()
+        mock_get_gmail_service.return_value = mock_service
+        mock_gmail_service_instance = mock_gmail_service_class.return_value
+        mock_gmail_service_instance.query_emails.side_effect = Exception("Test error")
+
+        with self.assertRaises(RuntimeError) as context:
+            await query_gmail_emails(
+                user_id=self.test_user_id,
+                query="is:unread",
+                max_results=10,
+                ctx=self.mock_context,  # type: ignore
+            )
+        self.assertTrue("Error querying emails: Test error" in str(context.exception))
+        self.assertEqual(len(self.mock_context.error_messages), 1)
+        self.assertTrue("Error querying emails: Test error" in self.mock_context.error_messages[0])
+        mock_get_gmail_service.assert_called_once_with(self.test_user_id)
+        mock_gmail_service_class.assert_called_once_with(mock_service)
+        mock_gmail_service_instance.query_emails.assert_called_once_with(query="is:unread", max_results=10)
