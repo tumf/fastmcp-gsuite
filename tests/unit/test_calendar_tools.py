@@ -185,3 +185,24 @@ class TestCalendarTools(unittest.TestCase):
             event_id=self.test_event_id,
             calendar_id=self.test_calendar_id,
         )
+
+    @patch("src.mcp_gsuite.calendar_tools.auth_helper.get_calendar_service")
+    @patch("src.mcp_gsuite.calendar_tools.calendar_impl.CalendarService")
+    async def test_list_calendars_error(self, mock_calendar_service_class, mock_get_calendar_service):
+        """Test error handling in list_calendars."""
+        mock_service = MagicMock()
+        mock_get_calendar_service.return_value = mock_service
+        mock_calendar_service_instance = mock_calendar_service_class.return_value
+        mock_calendar_service_instance.list_calendars.side_effect = Exception("Test error")
+
+        with self.assertRaises(RuntimeError) as context:
+            await list_calendars(
+                user_id=self.test_user_id,
+                ctx=self.mock_context,  # type: ignore
+            )
+        self.assertTrue("Error listing calendars: Test error" in str(context.exception))
+        self.assertEqual(len(self.mock_context.error_messages), 1)
+        self.assertTrue("Error listing calendars: Test error" in self.mock_context.error_messages[0])
+        mock_get_calendar_service.assert_called_once_with(self.test_user_id)
+        mock_calendar_service_class.assert_called_once_with(mock_service)
+        mock_calendar_service_instance.list_calendars.assert_called_once()
