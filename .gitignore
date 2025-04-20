@@ -16,3 +16,4 @@ oauth2creds.json
 .oauth2.*.json
 prompt.txt
 .tmp/
+.coverage
