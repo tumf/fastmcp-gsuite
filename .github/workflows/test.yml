@@ -48,5 +48,5 @@ jobs:
   # 3. テスト環境は環境変数を通じて秘密情報を必要とする
   #
   # e2eテストはローカル環境で以下のように実行してください:
-  #   - 標準e2eテスト: make e2e-tests
-  #   - MCPベースのe2eテスト: make mcp-e2e-tests ENV_FILE=.env.local
+  #   - 標準e2eテスト: dotenvx run -f .env.local -- uv run make e2e-tests
+  #   - MCPベースのe2eテスト: dotenvx run -f .env.local -- uv run make mcp-e2e-tests

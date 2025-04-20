@@ -1,4 +1,4 @@
-.PHONY: lint format test clean install update fix-lint build publish test-publish coverage bump-patch bump-minor bump-major e2e-tests mcp-e2e-tests mcp-google-e2e-tests setup-pre-commit
+.PHONY: lint format test clean install update fix-lint build publish test-publish coverage bump-patch bump-minor bump-major e2e-tests mcp-e2e-tests mcp-google-e2e-tests mcp-gdrive-e2e-tests mcp-tasks-e2e-tests mcp-contacts-e2e-tests mcp-all-e2e-tests setup-pre-commit
 
 # Python version
 PYTHON := python3
@@ -56,20 +56,32 @@ e2e-tests:
 # MCP E2E Testing with env file
 mcp-e2e-tests:
 	@echo "Running MCP E2E tests with environment variables..."
-	@if [ -z "$(ENV_FILE)" ]; then \
-		echo "Error: ENV_FILE is not set. Use make mcp-e2e-tests ENV_FILE=.env.local"; \
-		exit 1; \
-	fi
-	dotenvx run -f $(ENV_FILE) -- uv run pytest tests/e2e/test_mcp_gsuite.py --run-e2e -v
+	uv run pytest tests/e2e/test_mcp_gsuite.py --run-e2e -v
 
 # MCP Google Suite E2E Testing with env file
 mcp-google-e2e-tests:
 	@echo "Running MCP Google Suite E2E tests with environment variables..."
-	@if [ -z "$(ENV_FILE)" ]; then \
-		echo "Error: ENV_FILE is not set. Use make mcp-google-e2e-tests ENV_FILE=.env.local"; \
-		exit 1; \
-	fi
-	dotenvx run -f $(ENV_FILE) -- uv run pytest tests/e2e/test_mcp_google_suite.py --run-e2e -v
+	uv run pytest tests/e2e/test_mcp_google_suite.py --run-e2e -v
+
+# MCP Google Drive E2E Testing with env file
+mcp-gdrive-e2e-tests:
+	@echo "Running MCP Google Drive E2E tests with environment variables..."
+	uv run pytest tests/e2e/test_mcp_gdrive.py --run-e2e -v
+
+# MCP Google Tasks E2E Testing with env file
+mcp-tasks-e2e-tests:
+	@echo "Running MCP Google Tasks E2E tests with environment variables..."
+	uv run pytest tests/e2e/test_mcp_tasks.py --run-e2e -v
+
+# MCP Google Contacts E2E Testing with env file
+mcp-contacts-e2e-tests:
+	@echo "Running MCP Google Contacts E2E tests with environment variables..."
+	uv run pytest tests/e2e/test_mcp_contacts.py --run-e2e -v
+
+# Run all MCP E2E tests with env file
+mcp-all-e2e-tests:
+	@echo "Running all MCP E2E tests with environment variables..."
+	uv run pytest tests/e2e/test_mcp_*.py --run-e2e -v
 
 # Create or update test account
 create-test-account:

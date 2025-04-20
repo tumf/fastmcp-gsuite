@@ -272,3 +272,62 @@ The environment file should contain the following variables:
 - `GOOGLE_CLIENT_SECRET` - Your OAuth client secret
 
 Both types of E2E tests are excluded from CI pipelines and should only be run locally with valid credentials.
+
+### E2E テスト実行方法
+
+このプロジェクトでは、実際のGoogleアカウントを利用したエンドツーエンド（E2E）テストを実装しています。E2Eテストは以下の手順で実行できます。
+
+#### 前提条件
+
+E2Eテストを実行するには、以下が必要です：
+
+1. `.env.local` ファイルに必要な環境変数が設定されていること
+   - `GSUITE_CREDENTIALS_JSON` : Base64エンコードされたGoogle認証情報
+   - `GOOGLE_ACCOUNT_EMAIL` : テスト用Googleアカウントのメールアドレス
+   - `GOOGLE_PROJECT_ID` : GoogleプロジェクトID
+   - `GOOGLE_CLIENT_ID` : GoogleクライアントID
+   - `GOOGLE_CLIENT_SECRET` : Googleクライアントシークレット
+
+2. E2Eテスト用の依存関係がインストールされていること
+
+
+```bash
+   uv pip install -e ".[e2e]"
+   ```
+
+#### テスト実行コマンド
+
+- すべてのE2Eテストを実行:
+
+
+```bash
+  dotenvx run -f .env.local -- uv run make mcp-all-e2e-tests
+  ```
+
+- 個別のサービスに対するE2Eテスト:
+
+
+```bash
+  # Gmail関連のテスト
+  dotenvx run -f .env.local -- uv run make mcp-e2e-tests
+
+  # Google Calendar関連のテスト
+  dotenvx run -f .env.local -- uv run make mcp-google-e2e-tests
+
+  # Google Drive関連のテスト
+  dotenvx run -f .env.local -- uv run make mcp-gdrive-e2e-tests
+
+  # Google Tasks関連のテスト
+  dotenvx run -f .env.local -- uv run make mcp-tasks-e2e-tests
+
+  # Google Contacts関連のテスト
+  dotenvx run -f .env.local -- uv run make mcp-contacts-e2e-tests
+  ```
+
+#### 注意事項
+
+- E2Eテストは実際のGoogleアカウントにアクセスするため、本番環境には影響を与えないよう注意してください
+- CI環境ではE2Eテストは自動的にスキップされます
+- テスト実行中は一時的な認証ファイルが作成されますが、テスト終了後に自動的に削除されます
+
+## License
