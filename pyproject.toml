@@ -1,6 +1,6 @@
 [project]
 name = "fastmcp-gsuite"
-version = "0.4.1-beta"
+version = "1.0.0"
 description = "MCP Server to connect to Google G-Suite"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -89,7 +89,7 @@ fastmcp-gsuite = { workspace = true }
 [tool.ruff]
 # Basic settings
 line-length = 120
-target-version = "py311"
+target-version = "0.4.1-beta"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "W", "N", "B", "UP", "RUF", "A"]
@@ -107,7 +107,7 @@ line-ending = "auto"
 skip-magic-trailing-comma = false
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "0.4.1-beta"
 warn_return_any = false
 warn_unused_configs = true
 disallow_untyped_defs = false
