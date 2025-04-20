@@ -3,12 +3,8 @@ import logging
 from fastmcp import FastMCP
 
 from . import auth_helper
-from .calendar_tools import (
-    create_calendar_event,
-    delete_calendar_event,
-    list_calendar_events,
-    list_calendars,
-)
+from .calendar_tools import create_calendar_event, delete_calendar_event, list_calendar_events, list_calendars
+from .drive_tools import download_drive_file, get_drive_file, list_drive_files
 from .gmail_tools import (
     bulk_get_gmail_emails,
     bulk_save_gmail_attachments,
@@ -93,6 +89,13 @@ mcp.tool(description="List events from a specific calendar within a given time r
 mcp.tool(description="Create a new event in a specified calendar.")(create_calendar_event)
 
 mcp.tool(description="Delete an event from a calendar.")(delete_calendar_event)
+
+# Register Drive tools
+mcp.tool(description="List files in the user's Google Drive with optional filtering by search query.")(list_drive_files)
+
+mcp.tool(description="Get metadata for a specific Google Drive file by its ID.")(get_drive_file)
+
+mcp.tool(description="Download the content of a Google Drive file by its ID.")(download_drive_file)
 
 if __name__ == "__main__":
     logging.basicConfig(

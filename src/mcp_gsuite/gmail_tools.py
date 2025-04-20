@@ -242,7 +242,12 @@ async def create_gmail_reply(
         if not original_message:
             if ctx:
                 await ctx.warning(f"Original message with ID {original_message_id} not found for user {user_id}")
-            return [TextContent(type="text", text=f"Original message with ID {original_message_id} not found.")]
+            return [
+                TextContent(
+                    type="text",
+                    text=f"Original message with ID {original_message_id} not found.",
+                )
+            ]
 
         # Create the reply
         result = gmail_service.create_reply(original_message=original_message, reply_body=reply_body, send=send, cc=cc)

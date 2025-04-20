@@ -190,7 +190,11 @@ async def retry_async(
     max_attempts: int = 3,
     initial_backoff: float = 1.0,
     backoff_factor: float = 2.0,
-    expected_exceptions: ExcType | ExcTypes = (RuntimeError, ConnectionError, TimeoutError),
+    expected_exceptions: ExcType | ExcTypes = (
+        RuntimeError,
+        ConnectionError,
+        TimeoutError,
+    ),
     **kwargs: Any,
 ) -> T:
     """

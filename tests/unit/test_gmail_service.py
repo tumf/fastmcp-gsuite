@@ -175,7 +175,10 @@ class TestGmailService(unittest.TestCase):
             "mimeType": "multipart/alternative",
             "parts": [
                 {"mimeType": "text/plain", "body": {"data": encoded_body}},
-                {"mimeType": "text/html", "body": {"data": base64.urlsafe_b64encode(b"<p>HTML version</p>").decode()}},
+                {
+                    "mimeType": "text/html",
+                    "body": {"data": base64.urlsafe_b64encode(b"<p>HTML version</p>").decode()},
+                },
             ],
         }
 
@@ -188,7 +191,10 @@ class TestGmailService(unittest.TestCase):
     def test_query_emails(self):
         # Mock the response for messages.list
         mock_list_response = {
-            "messages": [{"id": "msg1", "threadId": "thread1"}, {"id": "msg2", "threadId": "thread2"}]
+            "messages": [
+                {"id": "msg1", "threadId": "thread1"},
+                {"id": "msg2", "threadId": "thread2"},
+            ]
         }
         self.mock_message_list.execute.return_value = mock_list_response
 
