@@ -38,7 +38,7 @@ class TestDriveTools(unittest.IsolatedAsyncioTestCase):
 
         with (
             patch("src.mcp_gsuite.drive_tools.auth_helper.get_drive_service") as mock_get_drive_service,
-            patch("src.mcp_gsuite.drive_tools.drive_impl.DriveService", return_value=mock_drive_service),
+            patch("src.mcp_gsuite.drive_tools.DriveService", return_value=mock_drive_service),
         ):
             mock_get_drive_service.return_value = "mock_service"
 
@@ -71,7 +71,7 @@ class TestDriveTools(unittest.IsolatedAsyncioTestCase):
 
         with (
             patch("src.mcp_gsuite.drive_tools.auth_helper.get_drive_service") as mock_get_drive_service,
-            patch("src.mcp_gsuite.drive_tools.drive_impl.DriveService", return_value=mock_drive_service),
+            patch("src.mcp_gsuite.drive_tools.DriveService", return_value=mock_drive_service),
         ):
             mock_get_drive_service.return_value = "mock_service"
 
@@ -100,7 +100,7 @@ class TestDriveTools(unittest.IsolatedAsyncioTestCase):
 
         with (
             patch("src.mcp_gsuite.drive_tools.auth_helper.get_drive_service") as mock_get_drive_service,
-            patch("src.mcp_gsuite.drive_tools.drive_impl.DriveService", return_value=mock_drive_service),
+            patch("src.mcp_gsuite.drive_tools.DriveService", return_value=mock_drive_service),
         ):
             mock_get_drive_service.return_value = "mock_service"
 
@@ -134,7 +134,7 @@ class TestDriveTools(unittest.IsolatedAsyncioTestCase):
 
         with (
             patch("src.mcp_gsuite.drive_tools.auth_helper.get_drive_service") as mock_get_drive_service,
-            patch("src.mcp_gsuite.drive_tools.drive_impl.DriveService", return_value=mock_drive_service),
+            patch("src.mcp_gsuite.drive_tools.DriveService", return_value=mock_drive_service),
         ):
             mock_get_drive_service.return_value = "mock_service"
 
@@ -163,7 +163,7 @@ class TestDriveTools(unittest.IsolatedAsyncioTestCase):
 
         with (
             patch("src.mcp_gsuite.drive_tools.auth_helper.get_drive_service") as mock_get_drive_service,
-            patch("src.mcp_gsuite.drive_tools.drive_impl.DriveService", return_value=mock_drive_service),
+            patch("src.mcp_gsuite.drive_tools.DriveService", return_value=mock_drive_service),
         ):
             mock_get_drive_service.return_value = "mock_service"
 
@@ -193,7 +193,7 @@ class TestDriveTools(unittest.IsolatedAsyncioTestCase):
 
         with (
             patch("src.mcp_gsuite.drive_tools.auth_helper.get_drive_service") as mock_get_drive_service,
-            patch("src.mcp_gsuite.drive_tools.drive_impl.DriveService", return_value=mock_drive_service),
+            patch("src.mcp_gsuite.drive_tools.DriveService", return_value=mock_drive_service),
         ):
             mock_get_drive_service.return_value = "mock_service"
 
@@ -228,7 +228,7 @@ class TestDriveTools(unittest.IsolatedAsyncioTestCase):
 
         with (
             patch("src.mcp_gsuite.drive_tools.auth_helper.get_drive_service") as mock_get_drive_service,
-            patch("src.mcp_gsuite.drive_tools.drive_impl.DriveService", return_value=mock_drive_service),
+            patch("src.mcp_gsuite.drive_tools.DriveService", return_value=mock_drive_service),
         ):
             mock_get_drive_service.return_value = "mock_service"
 
@@ -262,7 +262,7 @@ class TestDriveTools(unittest.IsolatedAsyncioTestCase):
 
         with (
             patch("src.mcp_gsuite.drive_tools.auth_helper.get_drive_service") as mock_get_drive_service,
-            patch("src.mcp_gsuite.drive_tools.drive_impl.DriveService", return_value=mock_drive_service),
+            patch("src.mcp_gsuite.drive_tools.DriveService", return_value=mock_drive_service),
         ):
             mock_get_drive_service.return_value = "mock_service"
 
@@ -294,7 +294,7 @@ class TestDriveTools(unittest.IsolatedAsyncioTestCase):
 
         with (
             patch("src.mcp_gsuite.drive_tools.auth_helper.get_drive_service") as mock_get_drive_service,
-            patch("src.mcp_gsuite.drive_tools.drive_impl.DriveService", return_value=mock_drive_service),
+            patch("src.mcp_gsuite.drive_tools.DriveService", return_value=mock_drive_service),
         ):
             mock_get_drive_service.return_value = "mock_service"
 
