@@ -16,11 +16,11 @@ from chuk_mcp.mcp_client.transport.stdio.stdio_server_parameters import (
     StdioServerParameters,
 )
 
-# デバッグログを有効化
+# Enable debug logging
 logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-# uvのパスを環境変数から取得、またはPATHから検索
+# Get the path of uv from environment variable or search in PATH
 UV_PATH = os.environ.get("UV_PATH") or shutil.which("uv")
 if not UV_PATH:
     pytest.skip("uv command not found in PATH or UV_PATH not set")
@@ -29,25 +29,25 @@ if not UV_PATH:
 @pytest.fixture(scope="session")
 def credentials():
     """Set up the test environment with credentials from environment variables"""
-    # 環境変数から認証情報を取得
+    # Get authentication information from environment variables
     credentials_json_str = os.environ.get("GSUITE_CREDENTIALS_JSON")
     google_email = os.environ.get("GOOGLE_ACCOUNT_EMAIL")
     google_project_id = os.environ.get("GOOGLE_PROJECT_ID")
     google_client_id = os.environ.get("GOOGLE_CLIENT_ID")
     google_client_secret = os.environ.get("GOOGLE_CLIENT_SECRET")
 
-    # 認証情報が設定されていることを確認
+    # Ensure that authentication information is set
     assert credentials_json_str, "GSUITE_CREDENTIALS_JSON environment variable is not set"
     assert google_email, "GOOGLE_ACCOUNT_EMAIL environment variable is not set"
     assert google_client_id, "GOOGLE_CLIENT_ID environment variable is not set"
     assert google_client_secret, "GOOGLE_CLIENT_SECRET environment variable is not set"
 
     try:
-        # Base64デコード
+        # Base64 decode
         credentials_json_decoded = base64.b64decode(credentials_json_str).decode("utf-8")
         decoded_credentials = json.loads(credentials_json_decoded)
 
-        # OAuth2Credentialsの必須フィールド
+        # Required fields for OAuth2Credentials
         credentials_json = {
             "access_token": decoded_credentials.get("access_token", ""),
             "client_id": google_client_id,
@@ -76,21 +76,21 @@ def credentials():
     except Exception as e:
         pytest.fail(f"Failed to decode credentials: {e!s}")
 
-    # 一時的な認証情報ファイルを作成
+    # Create temporary credentials file
     credentials_file = ".e2e_test_credentials.json"
     with open(credentials_file, "w") as f:
         json.dump(credentials_json, f)
 
-    # OAuth2認証ファイルを作成
+    # Create OAuth2 authentication file
     oauth2_file = f".oauth2.{google_email}.json"
     with open(oauth2_file, "w") as f:
         json.dump(credentials_json, f)
 
-    # 環境変数を設定してMCPサーバーの実行に必要なパラメータを提供
+    # Set environment variables to provide parameters needed to run the MCP server
     os.environ["GSUITE_CREDENTIALS_FILE"] = credentials_file
     os.environ["GSUITE_EMAIL"] = google_email
 
-    # テスト用のデータを返す
+    # Return data for testing
     yield {
         "credentials_file": credentials_file,
         "oauth2_file": oauth2_file,
@@ -100,7 +100,7 @@ def credentials():
         "client_secret": google_client_secret,
     }
 
-    # テスト後にファイルをクリーンアップ
+    # Clean up files after test
     if os.path.exists(credentials_file):
         os.remove(credentials_file)
     if os.path.exists(oauth2_file):
@@ -109,21 +109,21 @@ def credentials():
 
 @pytest.mark.asyncio
 class TestMCPGoogleSuite:
-    """MCPを使用したGoogleサービスへのE2Eテスト"""
+    """E2E tests for Google services using MCP"""
 
     def setup_method(self):
-        """テスト環境のセットアップ"""
-        # 親プロセスの環境変数をコピー
+        """Set up the test environment"""
+        # Copy the parent process's environment variables
         self.env = os.environ.copy()
 
     def teardown_method(self):
-        """テスト終了後のクリーンアップ"""
+        """Clean up after the test is complete"""
         pass
 
     @pytest.mark.e2e
     async def test_list_gmail_tools(self, credentials):
-        """Gmailに関連するツールが利用可能かテストする"""
-        # 親プロセスの環境変数を取得し、必要な変数を追加
+        """Test if Gmail-related tools are available"""
+        # Get the parent process's environment variables and add necessary variables
         env = os.environ.copy()
         env.update(
             {
@@ -132,35 +132,35 @@ class TestMCPGoogleSuite:
             }
         )
 
-        # StdioServerParametersを使用してサーバーパラメータを設定
+        # Set up server parameters using StdioServerParameters
         server_params = StdioServerParameters(command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env)
 
-        # サーバーに接続
+        # Connect to the server
         async with stdio_client(server_params) as (read_stream, write_stream):
-            # 初期化
+            # Initialize
             init_result = await send_initialize(read_stream, write_stream)
-            assert init_result, "サーバー初期化に失敗しました"
+            assert init_result, "Server initialization failed"
 
-            # 利用可能なツールの一覧を取得
+            # Get a list of available tools
             tools_response = await send_tools_list(read_stream, write_stream)
 
-            # ツールリストが返されたことを確認
-            assert "tools" in tools_response, "ツールリストが返されませんでした"
-            assert len(tools_response["tools"]) > 0, "利用可能なツールがありません"
+            # Verify that the tool list was returned
+            assert "tools" in tools_response, "Tool list was not returned"
+            assert len(tools_response["tools"]) > 0, "No tools available"
 
-            # Gmailに関連するツールが含まれているか確認
+            # Check if Gmail-related tools are included
             gmail_tools = [tool for tool in tools_response["tools"] if "gmail" in tool["name"].lower()]
-            assert len(gmail_tools) > 0, "Gmailに関連するツールが見つかりませんでした"
+            assert len(gmail_tools) > 0, "No Gmail-related tools found"
 
-            # ツール名を出力
+            # Output tool names
             for tool in gmail_tools:
                 print(f"Found Gmail tool: {tool['name']} - {tool['description']}")
 
     @pytest.mark.e2e
     @pytest.mark.skip(reason="Tool gmail_create_draft is not available")
     async def test_create_gmail_draft(self, credentials):
-        """Gmailドラフトの作成と削除をテストする"""
-        # 親プロセスの環境変数を取得し、必要な変数を追加
+        """Test creating and deleting a Gmail draft"""
+        # Get the parent process's environment variables and add necessary variables
         env = os.environ.copy()
         env.update(
             {
@@ -169,33 +169,33 @@ class TestMCPGoogleSuite:
             }
         )
 
-        # StdioServerParametersを使用してサーバーパラメータを設定
+        # Set up server parameters using StdioServerParameters
         server_params = StdioServerParameters(command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env)
 
-        # サーバーに接続
+        # Connect to the server
         async with stdio_client(server_params) as (read_stream, write_stream):
-            # 初期化
+            # Initialize
             init_result = await send_initialize(read_stream, write_stream)
-            assert init_result, "サーバー初期化に失敗しました"
+            assert init_result, "Server initialization failed"
 
-            # テスト用のメール件名と本文を作成
+            # Create test email subject and body
             subject = f"E2E Test: MCP Test - {datetime.now().isoformat()}"
-            # 未使用のため削除または使用するコードに修正
+            # Unused, remove or modify code to use
             # body = f"This is an automated e2e test using MCP client sent at {datetime.now().isoformat()}"
 
-            # ドラフト作成ツールを呼び出し
+            # Call the draft creation tool
             result = await send_tools_call(
                 read_stream,
                 write_stream,
-                name="query_gmail_emails",  # 使用できるツール名に変更
-                arguments={"max_results": 5},  # 必要なパラメータを変更
+                name="query_gmail_emails",  # Change to available tool name
+                arguments={"max_results": 5},  # Change to required parameters
             )
 
-            # ドラフトが作成されたことを確認
-            assert "id" in result, "ドラフトの作成に失敗しました"
+            # Verify that the draft was created
+            assert "id" in result, "Failed to create draft"
             draft_id = result["id"]
 
-            # ドラフトを検索
+            # Search for the draft
             search_result = await send_tools_call(
                 read_stream,
                 write_stream,
@@ -203,11 +203,11 @@ class TestMCPGoogleSuite:
                 arguments={"query": f"subject:{subject}"},
             )
 
-            # 検索結果が存在することを確認
-            assert "messages" in search_result, "メッセージの検索に失敗しました"
-            assert len(search_result["messages"]) > 0, "作成したドラフトが見つかりませんでした"
+            # Verify that search results exist
+            assert "messages" in search_result, "Failed to search for messages"
+            assert len(search_result["messages"]) > 0, "Created draft not found"
 
-            # ドラフトのクリーンアップ
+            # Clean up the draft
             delete_result = await send_tools_call(
                 read_stream,
                 write_stream,
@@ -215,12 +215,12 @@ class TestMCPGoogleSuite:
                 arguments={"draft_id": draft_id},
             )
 
-            assert delete_result.get("success", False), "ドラフトの削除に失敗しました"
+            assert delete_result.get("success", False), "Failed to delete draft"
 
     @pytest.mark.e2e
     async def test_list_calendar_tools(self, credentials):
-        """Calendarに関連するツールが利用可能かテストする"""
-        # 親プロセスの環境変数を取得し、必要な変数を追加
+        """Test if Calendar-related tools are available"""
+        # Get the parent process's environment variables and add necessary variables
         env = os.environ.copy()
         env.update(
             {
@@ -229,30 +229,30 @@ class TestMCPGoogleSuite:
             }
         )
 
-        # StdioServerParametersを使用してサーバーパラメータを設定
+        # Set up server parameters using StdioServerParameters
         server_params = StdioServerParameters(command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env)
 
-        # サーバーに接続
+        # Connect to the server
         async with stdio_client(server_params) as (read_stream, write_stream):
-            # 初期化
+            # Initialize
             init_result = await send_initialize(read_stream, write_stream)
-            assert init_result, "サーバー初期化に失敗しました"
+            assert init_result, "Server initialization failed"
 
-            # 利用可能なツールの一覧を取得
+            # Get a list of available tools
             tools_response = await send_tools_list(read_stream, write_stream)
 
-            # Calendarに関連するツールが含まれているか確認
+            # Check if Calendar-related tools are included
             calendar_tools = [tool for tool in tools_response["tools"] if "calendar" in tool["name"].lower()]
-            assert len(calendar_tools) > 0, "Calendarに関連するツールが見つかりませんでした"
+            assert len(calendar_tools) > 0, "No Calendar-related tools found"
 
-            # ツール名を出力
+            # Output tool names
             for tool in calendar_tools:
                 print(f"Found Calendar tool: {tool['name']} - {tool['description']}")
 
     @pytest.mark.e2e
     async def test_create_calendar_event(self, credentials):
-        """Calendarイベントの作成と削除をテストする"""
-        # 親プロセスの環境変数を取得し、必要な変数を追加
+        """Test creating and deleting a Calendar event"""
+        # Get the parent process's environment variables and add necessary variables
         env = os.environ.copy()
         env.update(
             {
@@ -261,27 +261,27 @@ class TestMCPGoogleSuite:
             }
         )
 
-        # StdioServerParametersを使用してサーバーパラメータを設定
+        # Set up server parameters using StdioServerParameters
         server_params = StdioServerParameters(command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env)
 
-        # サーバーに接続
+        # Connect to the server
         async with stdio_client(server_params) as (read_stream, write_stream):
-            # 初期化
+            # Initialize
             init_result = await send_initialize(read_stream, write_stream)
-            assert init_result, "サーバー初期化に失敗しました"
+            assert init_result, "Server initialization failed"
 
-            # テスト用のイベント詳細を作成
+            # Create event details for testing
             event_title = f"E2E Test Event - {datetime.now().isoformat()}"
 
-            # 開始時刻を現在から1時間後に設定
+            # Set start time to 1 hour from now
             start_time = datetime.now() + timedelta(hours=1)
             end_time = start_time + timedelta(hours=1)
 
-            # ISO形式の日時文字列に変換
+            # Convert to ISO format date string
             start_time_iso = start_time.isoformat()
             end_time_iso = end_time.isoformat()
 
-            # イベント作成ツールを呼び出し
+            # Call the event creation tool
             result = await send_tools_call(
                 read_stream,
                 write_stream,
@@ -295,13 +295,13 @@ class TestMCPGoogleSuite:
                 },
             )
 
-            # イベントが作成されたことを確認
-            assert result, "イベントの作成に失敗しました"
+            # Verify that the event was created
+            assert result, "Failed to create event"
             event_data = json.loads(result["content"][0]["text"])
-            assert "id" in event_data, "イベントIDが返されませんでした"
+            assert "id" in event_data, "Event ID was not returned"
             event_id = event_data["id"]
 
-            # イベントを検索
+            # Search for the event
             list_result = await send_tools_call(
                 read_stream,
                 write_stream,
@@ -315,21 +315,21 @@ class TestMCPGoogleSuite:
                 },
             )
 
-            # 検索結果が存在することを確認
-            assert list_result, "イベントの検索に失敗しました"
+            # Verify that search results exist
+            assert list_result, "Failed to search for events"
             events_data_text = list_result["content"][0]["text"]
             if events_data_text == "No events found matching the criteria.":
                 print(
-                    "Warning: イベントが見つかりませんでした。"
-                    "作成したばかりのイベントがまだGoogle Calendarに反映されていない可能性があります。"
+                    "Warning: No events found. "
+                    "The event you just created may not yet be reflected in Google Calendar."
                 )
-                # テストはここで終了します - イベントが見つからないので削除はスキップ
+                # Test ends here - skip deletion if event not found
                 return
 
             events_data = json.loads(events_data_text)
-            assert len(events_data) > 0, "作成したイベントが見つかりませんでした"
+            assert len(events_data) > 0, "Created event not found"
 
-            # イベントのクリーンアップ
+            # Clean up the event
             delete_result = await send_tools_call(
                 read_stream,
                 write_stream,
@@ -341,12 +341,12 @@ class TestMCPGoogleSuite:
                 },
             )
 
-            assert delete_result, "イベントの削除に失敗しました"
+            assert delete_result, "Failed to delete event"
 
     @pytest.mark.e2e
     async def test_gmail_search_and_read(self, credentials):
-        """Gmailの検索とメール取得をテストする"""
-        # 親プロセスの環境変数を取得し、必要な変数を追加
+        """Test Gmail search and message retrieval"""
+        # Get the parent process's environment variables and add necessary variables
         env = os.environ.copy()
         env.update(
             {
@@ -355,16 +355,16 @@ class TestMCPGoogleSuite:
             }
         )
 
-        # StdioServerParametersを使用してサーバーパラメータを設定
+        # Set up server parameters using StdioServerParameters
         server_params = StdioServerParameters(command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env)
 
-        # サーバーに接続
+        # Connect to the server
         async with stdio_client(server_params) as (read_stream, write_stream):
-            # 初期化
+            # Initialize
             init_result = await send_initialize(read_stream, write_stream)
-            assert init_result, "サーバー初期化に失敗しました"
+            assert init_result, "Server initialization failed"
 
-            # 直近の10件のメールを検索
+            # Search for the 10 most recent emails
             search_result = await send_tools_call(
                 read_stream,
                 write_stream,
@@ -376,16 +376,16 @@ class TestMCPGoogleSuite:
                 },
             )
 
-            # 検索結果が返されたことを確認
-            assert search_result, "メッセージの検索に失敗しました"
+            # Verify that search results were returned
+            assert search_result, "Failed to search for messages"
 
-            # 少なくとも1つのメールが返された場合、最初のメールの詳細を取得
+            # If at least one email was returned, get details of the first email
             emails_data_text = search_result["content"][0]["text"]
             if emails_data_text != "No emails found matching the query.":
                 emails_data = json.loads(emails_data_text)
                 email_id = emails_data["id"]
 
-                # メッセージの詳細を取得
+                # Get message details
                 message_result = await send_tools_call(
                     read_stream,
                     write_stream,
@@ -396,18 +396,18 @@ class TestMCPGoogleSuite:
                     },
                 )
 
-                # メッセージの詳細が返されたことを確認
-                assert message_result, "メッセージの取得に失敗しました"
+                # Verify that message details were returned
+                assert message_result, "Failed to retrieve message"
                 message_data = json.loads(message_result["content"][0]["text"])
 
-                # メッセージデータが正しい形式で返されたことを確認
-                assert "email" in message_data, "メールデータが返されませんでした"
-                assert "attachments" in message_data, "添付ファイル情報が返されませんでした"
+                # Verify that message data was returned in the correct format
+                assert "email" in message_data, "Email data was not returned"
+                assert "attachments" in message_data, "Attachment information was not returned"
 
     @pytest.mark.e2e
     async def test_gmail_labels(self, credentials):
-        """Gmailラベルの一覧取得をテストする"""
-        # 親プロセスの環境変数を取得し、必要な変数を追加
+        """Test retrieving Gmail labels"""
+        # Get the parent process's environment variables and add necessary variables
         env = os.environ.copy()
         env.update(
             {
@@ -416,16 +416,16 @@ class TestMCPGoogleSuite:
             }
         )
 
-        # StdioServerParametersを使用してサーバーパラメータを設定
+        # Set up server parameters using StdioServerParameters
         server_params = StdioServerParameters(command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env)
 
-        # サーバーに接続
+        # Connect to the server
         async with stdio_client(server_params) as (read_stream, write_stream):
-            # 初期化
+            # Initialize
             init_result = await send_initialize(read_stream, write_stream)
-            assert init_result, "サーバー初期化に失敗しました"
+            assert init_result, "Server initialization failed"
 
-            # Gmailラベルの一覧を取得
+            # Get Gmail labels
             labels_result = await send_tools_call(
                 read_stream,
                 write_stream,
@@ -433,21 +433,21 @@ class TestMCPGoogleSuite:
                 arguments={"user_id": credentials["email"]},
             )
 
-            # ラベル一覧が返されたことを確認
-            assert labels_result, "ラベル一覧の取得に失敗しました"
+            # Verify that labels were returned
+            assert labels_result, "Failed to retrieve label list"
             labels_data = json.loads(labels_result["content"][0]["text"])
-            assert labels_data, "ラベルデータが返されませんでした"
+            assert labels_data, "Label data was not returned"
 
     @pytest.mark.e2e
     async def test_calendar_get_colors(self, credentials):
-        """Calendarで利用可能な色の一覧を取得するテスト"""
-        # このテストはスキップします。カレンダー色の取得機能は実装されていないため
+        """Test retrieving available colors in Calendar"""
+        # Skip this test. The calendar color retrieval function is not implemented
         pytest.skip("Calendar color listing function is not implemented")
 
     @pytest.mark.e2e
     async def test_calendar_list(self, credentials):
-        """ユーザーのカレンダー一覧を取得するテスト"""
-        # 親プロセスの環境変数を取得し、必要な変数を追加
+        """Test retrieving user's calendar list"""
+        # Get the parent process's environment variables and add necessary variables
         env = os.environ.copy()
         env.update(
             {
@@ -456,16 +456,16 @@ class TestMCPGoogleSuite:
             }
         )
 
-        # StdioServerParametersを使用してサーバーパラメータを設定
+        # Set up server parameters using StdioServerParameters
         server_params = StdioServerParameters(command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env)
 
-        # サーバーに接続
+        # Connect to the server
         async with stdio_client(server_params) as (read_stream, write_stream):
-            # 初期化
+            # Initialize
             init_result = await send_initialize(read_stream, write_stream)
-            assert init_result, "サーバー初期化に失敗しました"
+            assert init_result, "Server initialization failed"
 
-            # カレンダー一覧を取得
+            # Get calendar list
             calendars_result = await send_tools_call(
                 read_stream,
                 write_stream,
@@ -473,7 +473,7 @@ class TestMCPGoogleSuite:
                 arguments={"user_id": credentials["email"]},
             )
 
-            # カレンダー一覧が返されたことを確認
-            assert calendars_result, "カレンダー一覧の取得に失敗しました"
+            # Verify that calendar list was returned
+            assert calendars_result, "Failed to retrieve calendar list"
             calendars_data = json.loads(calendars_result["content"][0]["text"])
-            assert calendars_data, "カレンダーデータが返されませんでした"
+            assert calendars_data, "Calendar data was not returned"
