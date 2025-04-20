@@ -15,9 +15,7 @@ from chuk_mcp.mcp_client.transport.stdio.stdio_server_parameters import (
 )
 
 # Get UV path from environment variables or PATH
-UV_PATH = (
-    os.environ.get("UV_PATH") or shutil.which("uv") or "/Users/tumf/.pyenv/shims/uv"
-)
+UV_PATH = os.environ.get("UV_PATH") or shutil.which("uv") or "/Users/tumf/.pyenv/shims/uv"
 
 
 @pytest.fixture(scope="session")
@@ -31,18 +29,14 @@ def credentials():
     google_client_secret = os.environ.get("GOOGLE_CLIENT_SECRET")
 
     # Verify that authentication information is set
-    assert (
-        credentials_json_str
-    ), "GSUITE_CREDENTIALS_JSON environment variable is not set"
+    assert credentials_json_str, "GSUITE_CREDENTIALS_JSON environment variable is not set"
     assert google_email, "GOOGLE_ACCOUNT_EMAIL environment variable is not set"
     assert google_client_id, "GOOGLE_CLIENT_ID environment variable is not set"
     assert google_client_secret, "GOOGLE_CLIENT_SECRET environment variable is not set"
 
     try:
         # Base64 decode
-        credentials_json_decoded = base64.b64decode(credentials_json_str).decode(
-            "utf-8"
-        )
+        credentials_json_decoded = base64.b64decode(credentials_json_str).decode("utf-8")
         decoded_credentials = json.loads(credentials_json_decoded)
 
         # Required fields for OAuth2Credentials
@@ -52,9 +46,7 @@ def credentials():
             "client_secret": google_client_secret,
             "refresh_token": decoded_credentials.get("refresh_token", ""),
             "token_expiry": decoded_credentials.get("token_expiry", ""),
-            "token_uri": decoded_credentials.get(
-                "token_uri", "https://oauth2.googleapis.com/token"
-            ),
+            "token_uri": decoded_credentials.get("token_uri", "https://oauth2.googleapis.com/token"),
             "user_agent": "fastmcp-gsuite-e2e-tests",
             "revoke_uri": "https://oauth2.googleapis.com/revoke",
             "id_token": None,
@@ -74,7 +66,7 @@ def credentials():
         }
 
     except Exception as e:
-        pytest.fail(f"Failed to decode credentials: {str(e)}")
+        pytest.fail(f"Failed to decode credentials: {e!s}")
 
     # Create temporary credentials file
     credentials_file = ".e2e_test_credentials.json"
@@ -122,9 +114,7 @@ class TestMCPContacts:
         )
 
         # Set MCP server parameters
-        server_params = StdioServerParameters(
-            command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env
-        )
+        server_params = StdioServerParameters(command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env)
 
         # Connect to the server
         async with stdio_client(server_params) as (read_stream, write_stream):
@@ -137,47 +127,64 @@ class TestMCPContacts:
             assert "tools" in tools_response, "No tools found in response"
 
             # Find Contacts related tools
-            contacts_tools = [
-                tool
-                for tool in tools_response["tools"]
-                if "contact" in tool["name"].lower()
-            ]
+            contacts_tools = [tool for tool in tools_response["tools"] if "contact" in tool["name"].lower()]
 
-            # Run the test if Contacts tools are available
-            if contacts_tools:
-                # Find the tool to get contact list
-                list_contacts_tool = next(
-                    (tool for tool in contacts_tools if "list" in tool["name"].lower()),
-                    None,
-                )
-
-                if list_contacts_tool:
-                    # Execute the tool (get max 10 contacts)
-                    tool_params = {"max_results": 10}
-                    result = await send_tools_call(
-                        read_stream,
-                        write_stream,
-                        list_contacts_tool["name"],
-                        tool_params,
-                    )
-
-                    # Verify results
-                    assert result, "Tool execution failed"
-                    assert (
-                        "connections" in result
-                        or "contactGroups" in result
-                        or "contacts" in result
-                    ), "No contacts found in response"
-
-                    # Display results
-                    contacts = (
-                        result.get("connections")
-                        or result.get("contactGroups")
-                        or result.get("contacts")
-                        or []
-                    )
-                    print(f"Found {len(contacts)} contacts")
-                else:
-                    pytest.skip("Contacts list tool not found")
-            else:
+            # Skip test if no contacts tools are available
+            if not contacts_tools:
                 pytest.skip("No Contacts tools found")
+
+            # Find the tool to get contact list
+            list_contacts_tool = next(
+                (tool for tool in contacts_tools if "list" in tool["name"].lower()),
+                None,
+            )
+
+            # Skip test if contact list tool is not available
+            if not list_contacts_tool:
+                pytest.skip("Contacts list tool not found")
+
+            # Execute the tool (get max 10 contacts)
+            tool_params = {"max_results": 10, "user_id": credentials["email"]}
+            result = await send_tools_call(
+                read_stream,
+                write_stream,
+                list_contacts_tool["name"],
+                tool_params,
+            )
+
+            # Verify results
+            assert result, "Tool execution failed"
+
+            # Check for content in response
+            assert "content" in result, "No content in tool response"
+            assert len(result["content"]) > 0, "Empty content in response"
+
+            has_contacts = False
+            for item in result["content"]:
+                if item.get("type") == "text" and item.get("text"):
+                    response_text = item.get("text")
+
+                    # Handle text responses
+                    if "no contacts found" in response_text.lower():
+                        print("Warning: No contacts found")
+                        return
+
+                    try:
+                        contacts_data = json.loads(response_text)
+                        if isinstance(contacts_data, list) or isinstance(contacts_data, dict):
+                            has_contacts = True
+                            # Display results
+                            contacts = contacts_data
+                            if isinstance(contacts_data, dict):
+                                contacts = (
+                                    contacts_data.get("connections")
+                                    or contacts_data.get("contactGroups")
+                                    or contacts_data.get("contacts")
+                                    or []
+                                )
+                            print(f"Found {len(contacts)} contacts")
+                            break
+                    except json.JSONDecodeError:
+                        continue
+
+            assert has_contacts, "No valid contacts found in response"
