@@ -432,8 +432,7 @@ class TestMCPGoogleSuite:
             events_data_text = list_result["content"][0]["text"]
             if events_data_text == "No events found matching the criteria.":
                 print(
-                    "Warning: No events found. "
-                    "The event you just created may not yet be reflected in Google Calendar."
+                    "Warning: No events found. The event you just created may not yet be reflected in Google Calendar."
                 )
                 # Test ends here - skip deletion if event not found
                 return

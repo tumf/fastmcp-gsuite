@@ -43,7 +43,7 @@ class CalendarService:
             return calendars
 
         except Exception as e:
-            logging.error(f"Error retrieving calendars: {str(e)}")
+            logging.error(f"Error retrieving calendars: {e!s}")
             logging.error(traceback.format_exc())
             return []
 
@@ -156,7 +156,7 @@ class CalendarService:
             return created_event
 
         except Exception as e:
-            logging.error(f"Error creating calendar event: {str(e)}")
+            logging.error(f"Error creating calendar event: {e!s}")
             logging.error(traceback.format_exc())
             return None
 
@@ -185,6 +185,6 @@ class CalendarService:
             return True
 
         except Exception as e:
-            logging.error(f"Error deleting calendar event {event_id}: {str(e)}")
+            logging.error(f"Error deleting calendar event {event_id}: {e!s}")
             logging.error(traceback.format_exc())
             return False

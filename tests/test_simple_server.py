@@ -14,9 +14,7 @@ from chuk_mcp.mcp_client.transport.stdio.stdio_server_parameters import (
 )
 
 # Enable debug logging
-logging.basicConfig(
-    level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 # Get UV path from environment variables or search in PATH
@@ -44,9 +42,7 @@ class TestSimpleServer:
             env=self.env,
         )
 
-        logger.debug(
-            f"Connecting to server with parameters: command={UV_PATH}, args={server_params.args}"
-        )
+        logger.debug(f"Connecting to server with parameters: command={UV_PATH}, args={server_params.args}")
         # Connect to the server
         try:
             async with stdio_client(server_params) as (read_stream, write_stream):
@@ -76,9 +72,7 @@ class TestSimpleServer:
         assert len(tools_response["tools"]) > 0, "No tools available"
 
         # Check if hello_world tool is included
-        hello_tools = [
-            tool for tool in tools_response["tools"] if "hello_world" == tool["name"]
-        ]
+        hello_tools = [tool for tool in tools_response["tools"] if "hello_world" == tool["name"]]
         assert len(hello_tools) > 0, "hello_world tool not found"
 
         # Call hello_world tool
@@ -91,6 +85,4 @@ class TestSimpleServer:
         )
 
         # Verify result
-        assert "Hello, Test User!" in str(
-            result
-        ), "Response from hello_world tool is incorrect"
+        assert "Hello, Test User!" in str(result), "Response from hello_world tool is incorrect"

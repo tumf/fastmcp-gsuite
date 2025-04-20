@@ -31,7 +31,7 @@ logger.info(
     f"creds='{settings.absolute_credentials_dir}'"
 )
 
-mcp = FastMCP(
+mcp: FastMCP = FastMCP(
     "mcp-gsuite-fast",
     instructions="MCP Server to connect to Google G-Suite using fastmcp.",
 )
@@ -82,8 +82,7 @@ mcp.tool(description="Create a reply to an existing Gmail email message.")(creat
 mcp.tool(description="Retrieve a Gmail attachment by its ID.")(get_gmail_attachment)
 
 mcp.tool(
-    description="Save multiple Gmail attachments to disk by their message IDs "
-    "and attachment IDs in a single request."
+    description="Save multiple Gmail attachments to disk by their message IDs and attachment IDs in a single request."
 )(bulk_save_gmail_attachments)
 
 # Register Calendar tools

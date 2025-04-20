@@ -29,10 +29,14 @@ class Settings(BaseSettings):
 try:
     settings = Settings()
     logger.info(
-        f"Loaded settings: gauth_file='{settings.gauth_file}', accounts_file='{settings.accounts_file}', credentials_dir='{settings.credentials_dir}'"
+        f"Loaded settings: gauth_file='{settings.gauth_file}', "
+        f"accounts_file='{settings.accounts_file}', "
+        f"credentials_dir='{settings.credentials_dir}'"
     )
     logger.info(
-        f"Absolute paths: gauth='{settings.absolute_gauth_file}', accounts='{settings.absolute_accounts_file}', creds='{settings.absolute_credentials_dir}'"
+        f"Absolute paths: gauth='{settings.absolute_gauth_file}', "
+        f"accounts='{settings.absolute_accounts_file}', "
+        f"creds='{settings.absolute_credentials_dir}'"
     )
 except Exception as e:
     logger.error(f"Error loading settings: {e}")

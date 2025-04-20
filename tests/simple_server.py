@@ -9,7 +9,7 @@ logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(name)s - %(leve
 logger = logging.getLogger(__name__)
 
 # Create a simple MCP server
-mcp = FastMCP(
+mcp: FastMCP = FastMCP(
     "simple-test-server",
     instructions="Simple MCP Server for testing connection issues.",
 )
@@ -33,6 +33,6 @@ if __name__ == "__main__":
 
     if "--stdio" in sys.argv:
         logger.info("Running in stdio mode...")
-        mcp.run(stdio=True)
+        mcp.run()
     else:
         mcp.run()
