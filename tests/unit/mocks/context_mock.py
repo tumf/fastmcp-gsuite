@@ -1,7 +1,14 @@
 """Mock implementation of the Context class from fastmcp."""
 
+from typing import Any, TypeVar
 
-class MockContext:
+from fastmcp import Context
+
+T = TypeVar("T")
+U = TypeVar("U")
+
+
+class MockContext(Context[Any, Any]):
     """Mock implementation of the Context class from fastmcp."""
 
     def __init__(self):
