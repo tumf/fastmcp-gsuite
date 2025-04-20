@@ -1,6 +1,6 @@
 [project]
 name = "fastmcp-gsuite"
-version = "1.0.0"
+version = "1.0.0-beta"
 description = "MCP Server to connect to Google G-Suite"
 readme = "README.md"
 requires-python = ">=3.13"
