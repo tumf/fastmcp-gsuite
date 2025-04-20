@@ -223,6 +223,7 @@ dependencies = [
     { name = "pytz" },
     { name = "requests" },
     { name = "types-httplib2" },
+    { name = "types-pytz" },
 ]
 
 [package.optional-dependencies]
@@ -280,6 +281,7 @@ requires-dist = [
     { name = "pytz", specifier = ">=2024.2" },
     { name = "requests", specifier = ">=2.32.3" },
     { name = "types-httplib2", specifier = ">=0.22.0.20250401" },
+    { name = "types-pytz", specifier = ">=2025.2.0.20250326" },
 ]
 provides-extras = ["dev", "e2e"]
 
