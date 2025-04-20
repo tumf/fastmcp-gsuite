@@ -1,15 +1,15 @@
 # scripts/get_refresh_token.py
-import os
-import logging
 import json
+import logging
+import os
 import urllib.parse
-from dotenv import load_dotenv
 
+from dotenv import load_dotenv
+from google.auth.exceptions import RefreshError
+from google.auth.transport.requests import Request
 # Use core google-auth components
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow  # Use base Flow for exchange
-from google.auth.transport.requests import Request
-from google.auth.exceptions import RefreshError
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"

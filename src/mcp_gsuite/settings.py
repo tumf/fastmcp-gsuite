@@ -1,11 +1,13 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
-import os
 import logging
+import os
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 logger = logging.getLogger(__name__)
 
+
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file='.env', extra='ignore')
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     gauth_file: str = "./.gauth.json"
     accounts_file: str = "./.accounts.json"
@@ -23,11 +25,16 @@ class Settings(BaseSettings):
     def absolute_accounts_file(self) -> str:
         return os.path.abspath(self.accounts_file)
 
+
 try:
     settings = Settings()
-    logger.info(f"Loaded settings: gauth_file='{settings.gauth_file}', accounts_file='{settings.accounts_file}', credentials_dir='{settings.credentials_dir}'")
-    logger.info(f"Absolute paths: gauth='{settings.absolute_gauth_file}', accounts='{settings.absolute_accounts_file}', creds='{settings.absolute_credentials_dir}'")
+    logger.info(
+        f"Loaded settings: gauth_file='{settings.gauth_file}', accounts_file='{settings.accounts_file}', credentials_dir='{settings.credentials_dir}'"
+    )
+    logger.info(
+        f"Absolute paths: gauth='{settings.absolute_gauth_file}', accounts='{settings.absolute_accounts_file}', creds='{settings.absolute_credentials_dir}'"
+    )
 except Exception as e:
     logger.error(f"Error loading settings: {e}")
-    settings = Settings() # Use defaults
+    settings = Settings()  # Use defaults
     logger.warning("Using default settings due to loading error.")

@@ -1,13 +1,20 @@
 import logging
-from googleapiclient.discovery import build
-from oauth2client.client import OAuth2Credentials # Keep for type hinting if needed, but rely on gauth functions
-from .gauth import get_stored_credentials, store_credentials, get_user_info, get_account_info as original_get_account_info
-from .settings import settings
 import os
+
+from googleapiclient.discovery import build
+from oauth2client.client import \
+    OAuth2Credentials  # Keep for type hinting if needed, but rely on gauth functions
+
+from .gauth import get_account_info as original_get_account_info
+from .gauth import get_stored_credentials, get_user_info, store_credentials
+from .settings import settings
 
 logger = logging.getLogger(__name__)
 
-def get_authenticated_service(service_name: str, version: str, user_id: str, scopes: list[str]):
+
+def get_authenticated_service(
+    service_name: str, version: str, user_id: str, scopes: list[str]
+):
     """
     Retrieves stored credentials, refreshes if necessary, and builds an authenticated Google API service client.
 
@@ -23,18 +30,27 @@ def get_authenticated_service(service_name: str, version: str, user_id: str, sco
     Raises:
         RuntimeError: If credentials are not found or cannot be refreshed/used.
     """
-    credentials = get_stored_credentials(user_id=user_id) # Uses settings internally now
+    credentials = get_stored_credentials(
+        user_id=user_id
+    )  # Uses settings internally now
     if not credentials:
-        logger.error(f"No stored OAuth2 credentials found for {user_id}. Please run the authentication flow first.")
-        raise RuntimeError(f"No stored OAuth2 credentials found for {user_id}. Please run the authentication flow.")
-
+        logger.error(
+            f"No stored OAuth2 credentials found for {user_id}. Please run the authentication flow first."
+        )
+        raise RuntimeError(
+            f"No stored OAuth2 credentials found for {user_id}. Please run the authentication flow."
+        )
 
     try:
         service = build(service_name, version, credentials=credentials)
-        logger.info(f"Successfully built Google service {service_name} v{version} for {user_id}")
+        logger.info(
+            f"Successfully built Google service {service_name} v{version} for {user_id}"
+        )
         return service
     except Exception as e:
-        logger.error(f"Failed to build Google service {service_name} v{version} for {user_id}: {e}")
+        logger.error(
+            f"Failed to build Google service {service_name} v{version} for {user_id}: {e}"
+        )
 
         raise RuntimeError(f"Failed to build Google service for {user_id}.") from e
 
@@ -42,20 +58,22 @@ def get_authenticated_service(service_name: str, version: str, user_id: str, sco
 def get_gmail_service(user_id: str):
     """Helper to get an authenticated Gmail service client."""
     gmail_scopes = [
-        "https://mail.google.com/", # Full access
-        "https://www.googleapis.com/auth/userinfo.email", # Needed for user info/verification
-        "openid"
+        "https://mail.google.com/",  # Full access
+        "https://www.googleapis.com/auth/userinfo.email",  # Needed for user info/verification
+        "openid",
     ]
-    return get_authenticated_service('gmail', 'v1', user_id, scopes=gmail_scopes)
+    return get_authenticated_service("gmail", "v1", user_id, scopes=gmail_scopes)
+
 
 def get_calendar_service(user_id: str):
     """Helper to get an authenticated Calendar service client."""
     calendar_scopes = [
-        "https://www.googleapis.com/auth/calendar", # Full access
-        "https://www.googleapis.com/auth/userinfo.email", # Needed for user info/verification
-        "openid"
+        "https://www.googleapis.com/auth/calendar",  # Full access
+        "https://www.googleapis.com/auth/userinfo.email",  # Needed for user info/verification
+        "openid",
     ]
-    return get_authenticated_service('calendar', 'v3', user_id, scopes=calendar_scopes)
+    return get_authenticated_service("calendar", "v3", user_id, scopes=calendar_scopes)
+
 
 def get_account_info():
     """Gets account information from the configured accounts file."""
