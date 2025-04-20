@@ -4,7 +4,21 @@ from fastmcp import FastMCP
 
 from . import auth_helper
 from .calendar_tools import create_calendar_event, delete_calendar_event, list_calendar_events, list_calendars
-from .drive_tools import download_drive_file, get_drive_file, list_drive_files
+from .drive_tools import (
+    copy_drive_file,
+    create_drive_folder,
+    delete_drive_file,
+    delete_drive_folder,
+    download_drive_file,
+    get_drive_file,
+    list_drive_files,
+    list_drive_folders,
+    move_drive_file,
+    move_drive_folder,
+    rename_drive_file,
+    rename_drive_folder,
+    upload_drive_file,
+)
 from .gmail_tools import (
     bulk_get_gmail_emails,
     bulk_save_gmail_attachments,
@@ -96,6 +110,27 @@ mcp.tool(description="List files in the user's Google Drive with optional filter
 mcp.tool(description="Get metadata for a specific Google Drive file by its ID.")(get_drive_file)
 
 mcp.tool(description="Download the content of a Google Drive file by its ID.")(download_drive_file)
+
+mcp.tool(description="Upload a file to Google Drive.")(upload_drive_file)
+
+mcp.tool(description="Create a copy of a file in Google Drive.")(copy_drive_file)
+
+mcp.tool(description="Delete a file from Google Drive.")(delete_drive_file)
+
+mcp.tool(description="Rename a file in Google Drive.")(rename_drive_file)
+
+mcp.tool(description="Move a file to a different folder in Google Drive.")(move_drive_file)
+
+# Register Drive folder tools
+mcp.tool(description="Create a new folder in Google Drive.")(create_drive_folder)
+
+mcp.tool(description="List folders in the user's Google Drive with optional filtering.")(list_drive_folders)
+
+mcp.tool(description="Rename a folder in Google Drive.")(rename_drive_folder)
+
+mcp.tool(description="Move a folder to a different location in Google Drive.")(move_drive_folder)
+
+mcp.tool(description="Delete a folder from Google Drive.")(delete_drive_folder)
 
 if __name__ == "__main__":
     logging.basicConfig(
