@@ -328,3 +328,4 @@ dotenvx run -f .env.local -- uv run make mcp-contacts-e2e-tests
 - Temporary authentication files are created during test execution but are automatically deleted afterward
 
 ## License
+# Test push hook
