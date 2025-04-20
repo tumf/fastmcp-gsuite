@@ -43,3 +43,13 @@ repos:
     hooks:
       - id: detect-secrets
         exclude: 'credentials/.*|.*\.enc\..*|.*encrypted:.*|\.git/.*|.*\.ipynb|\.mypy_cache/.*|\.pytest_cache/.*|\.ruff_cache/.*|\.env\..*|\.secrets\.baseline'
+
+  - repo: local
+    hooks:
+      - id: run-tests
+        name: Run tests before push
+        entry: uv run pytest --ignore=tests/e2e
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [push]
