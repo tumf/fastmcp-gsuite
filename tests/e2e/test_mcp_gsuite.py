@@ -13,10 +13,13 @@ from chuk_mcp.mcp_client.transport.stdio.stdio_client import stdio_client
 from chuk_mcp.mcp_client.transport.stdio.stdio_server_parameters import \
     StdioServerParameters
 
-# uvのパスを環境変数PATHから探す
-UV_PATH = shutil.which("uv")
-if not UV_PATH:
-    pytest.skip("uv command not found in PATH")
+# uvのパスを環境変数から取得するか、PATHから探す
+UV_PATH = (
+    os.environ.get("UV_PATH") or shutil.which("uv") or "/Users/tumf/.pyenv/shims/uv"
+)
+# テスト実行のためにスキップを一時的に無効化
+# if not UV_PATH:
+#     pytest.skip("uv command not found in PATH or UV_PATH not set")
 
 
 @pytest.fixture(scope="session")

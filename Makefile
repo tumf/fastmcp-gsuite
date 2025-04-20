@@ -1,4 +1,4 @@
-.PHONY: lint format test clean install update fix-lint build publish test-publish coverage bump-patch bump-minor bump-major e2e-tests mcp-e2e-tests setup-pre-commit
+.PHONY: lint format test clean install update fix-lint build publish test-publish coverage bump-patch bump-minor bump-major e2e-tests mcp-e2e-tests mcp-google-e2e-tests setup-pre-commit
 
 # Python version
 PYTHON := python3
@@ -61,6 +61,24 @@ mcp-e2e-tests:
 		exit 1; \
 	fi
 	dotenvx run -f $(ENV_FILE) -- uv run pytest tests/e2e/test_mcp_gsuite.py --run-e2e -v
+
+# MCP Google Suite E2E Testing with env file
+mcp-google-e2e-tests:
+	@echo "Running MCP Google Suite E2E tests with environment variables..."
+	@if [ -z "$(ENV_FILE)" ]; then \
+		echo "Error: ENV_FILE is not set. Use make mcp-google-e2e-tests ENV_FILE=.env.local"; \
+		exit 1; \
+	fi
+	dotenvx run -f $(ENV_FILE) -- uv run pytest tests/e2e/test_mcp_google_suite.py --run-e2e -v
+
+# Create or update test account
+create-test-account:
+	@echo "Creating or updating test account in .accounts.json..."
+	@if [ -z "$(ENV_FILE)" ]; then \
+		echo "Error: ENV_FILE is not set. Use make create-test-account ENV_FILE=.env.local"; \
+		exit 1; \
+	fi
+	@dotenvx run -f $(ENV_FILE) -- ./scripts/create_test_account.sh
 
 # Coverage
 coverage:

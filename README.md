@@ -64,7 +64,6 @@ Google Workspace (G Suite) APIs require OAuth2 authorization. Follow these steps
 
 2. Required OAuth2 Scopes:
 
-
 ```json
    [
      "openid",
@@ -102,7 +101,7 @@ Google Workspace (G Suite) APIs require OAuth2 authorization. Follow these steps
 }
 ```
 
-You can specifiy multiple accounts. Make sure they have access in your Google Auth app. The `extra_info` field is especially interesting as you can add info here that you want to tell the AI about the account (e.g. whether it has a specific agenda)
+You can specify multiple accounts. Make sure they have access in your Google Auth app. The `extra_info` field is especially interesting as you can add info here that you want to tell the AI about the account (e.g. whether it has a specific agenda)
 
 Note: **Initial Authentication Required:** Before running the server for the first time with a new account, you need to perform an initial OAuth2 authentication. This server does not yet include a built-in command for this. You may need to adapt the authentication logic from the previous version or use a separate script to generate the initial `.oauth2.{email}.json` credential file by completing the Google OAuth flow (which involves opening a browser, logging in, and granting permissions). Once the credential file exists, the server will use it and attempt to refresh the token automatically when needed.
 
@@ -115,17 +114,16 @@ On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
 <details>
   <summary>Development/Unpublished Servers Configuration</summary>
 
-
 ```json
 {
   "mcpServers": {
-    "fastmcp-gsuite": {
+    "gsuite": {
       "command": "uv",
       "args": [
         "--directory",
         "<dir_to>/fastmcp-gsuite",
         "run",
-        "fastmcp-gsuite" # Use the new entry point
+        "fastmcp-gsuite"
       ]
     }
   }
@@ -155,7 +153,6 @@ Note: Configuration is now primarily handled via environment variables or a `.en
 
 <details>
   <summary>Published Servers Configuration</summary>
-
 
 ```json
 {
