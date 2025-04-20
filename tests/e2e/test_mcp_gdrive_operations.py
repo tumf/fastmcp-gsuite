@@ -613,6 +613,12 @@ class TestMCPGDriveOperations:
         6. Move files to the folder
         7. Remove all dummy files and the folder
         """
+        with open(credentials["credentials_file"]) as f:
+            creds_data = json.load(f)
+            scopes = creds_data.get("scopes", [])
+            if "https://www.googleapis.com/auth/drive" not in scopes:
+                pytest.skip("Credentials do not have Drive scope. Please regenerate credentials with Drive scope.")
+
         env = os.environ.copy()
         env.update(
             {
