@@ -81,6 +81,7 @@ pythonpath = [
 markers = [
   "e2e: marks tests as end-to-end tests requiring real credentials"
 ]
+testpaths = ["tests"]
 
 [tool.uv.sources]
 fastmcp-gsuite = { workspace = true }

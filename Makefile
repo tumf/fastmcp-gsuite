@@ -46,7 +46,7 @@ format:
 # Testing
 test:
 	@echo "Running tests..."
-	uv run pytest
+	uv run pytest --ignore=tests/e2e
 
 # E2E Testing
 e2e-tests:
