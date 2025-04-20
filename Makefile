@@ -1,4 +1,4 @@
-.PHONY: lint format test clean install update fix-lint build publish test-publish coverage bump-patch bump-minor bump-major
+.PHONY: lint format test clean install update fix-lint build publish test-publish coverage bump-patch bump-minor bump-major e2e-tests mcp-e2e-tests
 
 # Python version
 PYTHON := python3
@@ -40,6 +40,20 @@ format:
 test:
 	@echo "Running tests..."
 	uv run pytest
+
+# E2E Testing
+e2e-tests:
+	@echo "Running E2E tests..."
+	uv run pytest tests/e2e --run-e2e -v
+
+# MCP E2E Testing with env file
+mcp-e2e-tests:
+	@echo "Running MCP E2E tests with environment variables..."
+	@if [ -z "$(ENV_FILE)" ]; then \
+		echo "Error: ENV_FILE is not set. Use make mcp-e2e-tests ENV_FILE=.env.local"; \
+		exit 1; \
+	fi
+	dotenvx run -f $(ENV_FILE) -- uv run pytest tests/e2e/test_mcp_gsuite.py --run-e2e -v
 
 # Coverage
 coverage:

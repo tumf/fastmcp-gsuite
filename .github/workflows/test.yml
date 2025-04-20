@@ -1,0 +1,52 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install UV
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: |
+          uv pip install -e ".[dev]"
+
+      - name: Lint with ruff
+        run: |
+          uv run ruff check .
+
+      - name: Type check with mypy
+        run: |
+          uv run mypy .
+
+      - name: Test with pytest (excluding e2e tests)
+        run: |
+          uv run pytest --ignore=tests/e2e
+
+  # e2eテストはCI環境では実行しません
+  # これには以下の理由があります:
+  # 1. e2eテストには実際のGoogleアカウント認証情報が必要
+  # 2. MCPテストには実際のアカウント接続と通信が必要
+  # 3. テスト環境は環境変数を通じて秘密情報を必要とする
+  #
+  # e2eテストはローカル環境で以下のように実行してください:
+  #   - 標準e2eテスト: make e2e-tests
+  #   - MCPベースのe2eテスト: make mcp-e2e-tests ENV_FILE=.env.local

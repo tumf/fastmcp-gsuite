@@ -1,7 +1,8 @@
-# mcp-gsuite MCP server (using fastmcp)
+# fastmcp-gsuite MCP server (using fastmcp)
 
-[![smithery badge](https://smithery.ai/badge/mcp-gsuite)](https://smithery.ai/server/mcp-gsuite)
 MCP server to interact with Google products, rewritten using the `fastmcp` library.
+
+This project is a fork of [mcp-gsuite](https://github.com/MarkusPfundstein/mcp-gsuite).
 
 ## Example prompts
 
@@ -47,14 +48,6 @@ Example prompts you can try:
 ## Quickstart
 
 ### Install
-
-### Installing via Smithery
-
-To install mcp-gsuite for Claude Desktop automatically via [Smithery](https://smithery.ai/server/mcp-gsuite) (Note: Smithery integration might need updates for the `fastmcp` version):
-
-```bash
-npx -y @smithery/cli install mcp-gsuite --client claude
-```
 
 #### Oauth 2
 
@@ -126,32 +119,31 @@ On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
 ```json
 {
   "mcpServers": {
-    "mcp-gsuite": {
+    "fastmcp-gsuite": {
       "command": "uv",
       "args": [
         "--directory",
-        "<dir_to>/mcp-gsuite",
+        "<dir_to>/fastmcp-gsuite",
         "run",
-        "mcp-gsuite-fast" # Use the new entry point
+        "fastmcp-gsuite" # Use the new entry point
       ]
     }
   }
 }
 ```
 
-
-Note: Configuration is now primarily handled via environment variables or a `.env` file in the working directory, using `pydantic-settings`. See the Configuration Options section below.
+Note: Configuration is now primarily handled via environment variables or a `.env` file in the working directory, using `pydantic-settings` . See the Configuration Options section below.
 
 ```json
 {
   "mcpServers": {
-    "mcp-gsuite": {
+    "fastmcp-gsuite": {
       "command": "uv",
       "args": [
         "--directory",
-        "<dir_to>/mcp-gsuite",
+        "<dir_to>/fastmcp-gsuite",
         "run",
-        "mcp-gsuite-fast" # Use the new entry point
+        "fastmcp-gsuite" # Use the new entry point
         # Configuration via .env or environment variables is preferred now
       ]
     }
@@ -168,10 +160,10 @@ Note: Configuration is now primarily handled via environment variables or a `.en
 ```json
 {
   "mcpServers": {
-    "mcp-gsuite": {
+    "fastmcp-gsuite": {
       "command": "uvx",
       "args": [
-        "mcp-gsuite-fast" # Use the new entry point
+        "fastmcp-gsuite" # Use the new entry point
         # Configuration via .env or environment variables is preferred now
       ]
     }
@@ -183,7 +175,7 @@ Note: Configuration is now primarily handled via environment variables or a `.en
 
 ### Configuration Options (via `.env` file or Environment Variables)
 
-Configuration is now managed using `pydantic-settings`. Create a `.env` file in the directory where you run the server, or set environment variables:
+Configuration is now managed using `pydantic-settings` . Create a `.env` file in the directory where you run the server, or set environment variables:
 
 * `GAUTH_FILE`: Path to the `.gauth.json` file containing OAuth2 client configuration. Default: `./.gauth.json`
 * `ACCOUNTS_FILE`: Path to the `.accounts.json` file containing Google account information. Default: `./.accounts.json`
@@ -237,7 +229,7 @@ experience, we strongly recommend using the [MCP Inspector](https://github.com/m
 You can launch the MCP Inspector via [ `npm` ](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) with this command:
 
 ```bash
-npx @modelcontextprotocol/inspector uv --directory /path/to/mcp-gsuite run mcp-gsuite-fast
+npx @modelcontextprotocol/inspector uv --directory /path/to/fastmcp-gsuite run fastmcp-gsuite
 ```
 
 Upon launching, the Inspector will display a URL that you can access in your browser to begin debugging.
@@ -245,5 +237,41 @@ Upon launching, the Inspector will display a URL that you can access in your bro
 You can also watch the server logs with this command:
 
 ```bash
-tail -n 20 -f ~/Library/Logs/Claude/mcp-server-mcp-gsuite-fast.log # Log filename might change based on the server name
+tail -n 20 -f ~/Library/Logs/Claude/mcp-server-fastmcp-gsuite.log # Log filename might change based on the server name
 ```
+
+## E2E Testing
+
+### Standard E2E Tests
+
+To run the standard E2E tests, you need to set up the necessary environment variables with valid Google credentials:
+
+```bash
+# Make sure valid Google credentials are set in your environment variables
+dotenvx run -f .env.local -- uv run make e2e-tests
+```
+
+These tests use the Google API libraries directly to authenticate and test the functionality.
+
+### MCP-Based E2E Tests
+
+There are also MCP-based E2E tests that test the functionality through the MCP protocol, simulating how Claude or other clients would interact with the MCP server:
+
+```bash
+# Specify the environment file containing your Google credentials
+make mcp-e2e-tests ENV_FILE=.env.local
+```
+
+This will run tests that:
+1. Start the MCP G-Suite server
+2. Connect to it using the chuk-mcp client
+3. Test various tools like Gmail message listing and Calendar event retrieval
+
+The environment file should contain the following variables:
+- `GSUITE_CREDENTIALS_JSON` - Base64 encoded JSON credentials
+- `GOOGLE_ACCOUNT_EMAIL` - Your Google account email
+- `GOOGLE_PROJECT_ID` - Your Google Cloud project ID
+- `GOOGLE_CLIENT_ID` - Your OAuth client ID
+- `GOOGLE_CLIENT_SECRET` - Your OAuth client secret
+
+Both types of E2E tests are excluded from CI pipelines and should only be run locally with valid credentials.

@@ -1,10 +1,12 @@
 # scripts/get_refresh_token.py
+import argparse
+import base64
 import json
 import logging
 import os
+import sys
 import urllib.parse
 
-from dotenv import load_dotenv
 from google.auth.exceptions import RefreshError
 from google.auth.transport.requests import Request
 # Use core google-auth components
@@ -15,16 +17,7 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
-# --- Configuration (Simplified for Diagnosis) ---
-# Load environment variables from .env.local relative to this script's parent directory
-# Still load dotenv for USER_ID and CREDENTIALS_DIR
-dotenv_path = os.path.join(os.path.dirname(__file__), "../.env.local")
-load_dotenv(dotenv_path=dotenv_path)
-
-# --- START: Hardcoded values for diagnosis ---
-# !! IMPORTANT: Adjust this path if the file is not in the same directory as the script !!
-# Assuming the file is in the .tmp directory relative to the project root
-CLIENT_SECRET_FILE = ".tmp/client_secret.json"
+# --- Configuration ---
 # Use full scopes again, as minimal didn't help
 SCOPES = [
     "openid",
@@ -32,11 +25,12 @@ SCOPES = [
     "https://mail.google.com/",
     "https://www.googleapis.com/auth/calendar",
 ]
-# --- END: Hardcoded values for diagnosis ---
 
-# CLIENT_SECRET_FILE = os.getenv("GOOGLE_CLIENT_SECRET_FILE") # Commented out for diagnosis
-USER_ID = os.getenv("GOOGLE_ACCOUNT_EMAIL")  # The email to authorize (Still needed)
-CREDENTIALS_DIR = os.getenv("CREDENTIALS_DIR", "./credentials")  # Still needed
+# Get required environment variables directly, without dotenv
+USER_ID = os.environ.get("GOOGLE_ACCOUNT_EMAIL")  # The email to authorize
+CREDENTIALS_DIR = os.environ.get(
+    "CREDENTIALS_DIR", "./credentials"
+)  # Default to ./credentials if not set
 
 # Redirect URI for Out-Of-Band (manual copy/paste) flow
 REDIRECT_URI_OOB = "urn:ietf:wg:oauth:2.0:oob"
@@ -44,24 +38,28 @@ REDIRECT_URI_OOB = "urn:ietf:wg:oauth:2.0:oob"
 # --- End Configuration ---
 
 
-def get_refresh_token_manual_url():
+def get_refresh_token_manual_url(client_secret_file):
     """Manually constructs auth URL and uses Flow to exchange code."""
 
-    if not os.path.exists(CLIENT_SECRET_FILE):
-        logging.error(f"Client secrets file path not found at: {CLIENT_SECRET_FILE}")
+    if not os.path.exists(client_secret_file):
+        logging.error(f"Client secrets file path not found at: {client_secret_file}")
         return
     if not USER_ID:
-        logging.error("Missing GOOGLE_ACCOUNT_EMAIL in .env.local")
-        return
+        logging.error("Missing GOOGLE_ACCOUNT_EMAIL environment variable")
+        print(
+            "Please set the GOOGLE_ACCOUNT_EMAIL environment variable with your Google email address"
+        )
+        print("Example: export GOOGLE_ACCOUNT_EMAIL=your.email@gmail.com")
+        sys.exit(1)
 
     # Load client secrets data from file
     try:
-        with open(CLIENT_SECRET_FILE, "r") as f:
+        with open(client_secret_file, "r") as f:
             client_config_data = json.load(f)
             # Ensure it's the correct type ('installed' key should exist)
             if "installed" not in client_config_data:
                 logging.error(
-                    f"Client secrets file {CLIENT_SECRET_FILE} does not appear to be for an 'installed' application."
+                    f"Client secrets file {client_secret_file} does not appear to be for an 'installed' application."
                 )
                 return
             client_id = client_config_data["installed"].get("client_id")
@@ -74,7 +72,7 @@ def get_refresh_token_manual_url():
 
     except Exception as e:
         logging.error(
-            f"Failed to load or parse client secrets file ({CLIENT_SECRET_FILE}): {e}"
+            f"Failed to load or parse client secrets file ({client_secret_file}): {e}"
         )
         return
 
@@ -103,7 +101,7 @@ def get_refresh_token_manual_url():
     try:
         # Use the base Flow class for code exchange, configured from the file
         flow = Flow.from_client_secrets_file(
-            CLIENT_SECRET_FILE,
+            client_secret_file,
             scopes=SCOPES,
             redirect_uri=REDIRECT_URI_OOB,  # Must match the URI used in the auth request
         )
@@ -159,6 +157,36 @@ def get_refresh_token_manual_url():
         else:
             logging.warning("Refresh token was NOT obtained.")
 
+        # --- Step 4: Generate environment variables for the user ---
+        # Base64 encode credentials data for secure storage in environment variables
+        credentials_json_str = json.dumps(credential_data_oauth2client_like)
+        credentials_base64 = base64.b64encode(
+            credentials_json_str.encode("utf-8")
+        ).decode("utf-8")
+
+        # Display only GSUITE_CREDENTIALS_JSON with double quotes
+        print("\n" + "=" * 80)
+        print("Authentication credentials generated for E2E tests")
+        print("=" * 80)
+        print(f'GSUITE_CREDENTIALS_JSON="{credentials_base64}"')
+        print("=" * 80)
+        print(
+            "\nSet the environment variable in your testing environment using your preferred method."
+        )
+        print(
+            "Make sure the following environment variables are available during test execution:"
+        )
+        print("- GSUITE_CREDENTIALS_JSON (shown above)")
+        print("- GOOGLE_ACCOUNT_EMAIL")
+        print("- GOOGLE_PROJECT_ID")
+        print("- GOOGLE_CLIENT_ID")
+        print("- GOOGLE_CLIENT_SECRET")
+        print(
+            "\nFor example, when running E2E tests, ensure these variables are properly set"
+        )
+        print("according to your chosen environment configuration method.")
+        print("=" * 80)
+
     except Exception as e:
         logging.error(
             f"An error occurred during code exchange or saving: {e}", exc_info=True
@@ -166,4 +194,33 @@ def get_refresh_token_manual_url():
 
 
 if __name__ == "__main__":
-    get_refresh_token_manual_url()
+    parser = argparse.ArgumentParser(
+        description="Generate OAuth2 credentials for Google APIs"
+    )
+    parser.add_argument(
+        "--client-secret",
+        "-c",
+        required=True,
+        help="Path to the client secret JSON file (downloaded from Google Cloud Console)",
+    )
+    args = parser.parse_args()
+
+    # Check if required environment variable is set
+    if not os.environ.get("GOOGLE_ACCOUNT_EMAIL"):
+        print("Error: GOOGLE_ACCOUNT_EMAIL environment variable is not set")
+        print("Please set your Google account email as an environment variable:")
+        print("  export GOOGLE_ACCOUNT_EMAIL=your.email@gmail.com")
+        sys.exit(1)
+
+    # Validate client secret file exists
+    if not os.path.exists(args.client_secret):
+        print(f"Error: Client secret file not found at {args.client_secret}")
+        print("Download the client secret JSON file from Google Cloud Console:")
+        print("1. Go to https://console.cloud.google.com/")
+        print("2. Select your project")
+        print("3. Navigate to APIs & Services > Credentials")
+        print("4. Create or select an OAuth 2.0 Client ID")
+        print("5. Download the JSON file")
+        sys.exit(1)
+
+    get_refresh_token_manual_url(args.client_secret)
