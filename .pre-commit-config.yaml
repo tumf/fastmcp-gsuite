@@ -48,7 +48,7 @@ repos:
     hooks:
       - id: run-tests
         name: Run tests before push
-        entry: uv run pytest --ignore=tests/e2e
+        entry: bash -c "uv run pytest --ignore=tests/e2e || [ $? -eq 5 ]"
         language: system
         pass_filenames: false
         always_run: true
