@@ -3,6 +3,7 @@ import json
 import os
 import shutil
 import tempfile
+import time
 from typing import Any
 
 import pytest
@@ -603,6 +604,264 @@ class TestMCPGDriveOperations:
             assert success, "No confirmation of successful deletion found in response"
 
     @pytest.mark.e2e
+    async def test_folder_operations(self, credentials):
+        """Test dedicated folder operations in Google Drive:
+        1. Create a folder
+        2. List folders
+        3. Rename the folder
+        4. Create a subfolder
+        5. Move the subfolder to another location
+        6. Delete both folders
+        """
+        with open(credentials["credentials_file"]) as f:
+            creds_data = json.load(f)
+            scopes = creds_data.get("scopes", [])
+            if "https://www.googleapis.com/auth/drive" not in scopes:
+                pytest.skip("Credentials do not have Drive scope. Please regenerate credentials with Drive scope.")
+
+        env = os.environ.copy()
+        env.update(
+            {
+                "GSUITE_CREDENTIALS_FILE": credentials["credentials_file"],
+                "GSUITE_EMAIL": credentials["email"],
+            }
+        )
+
+        server_params = StdioServerParameters(command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env)
+
+        async with stdio_client(server_params) as (read_stream, write_stream):
+            init_result = await send_initialize(read_stream, write_stream)
+            assert init_result, "Failed to initialize MCP server"
+
+            tools_response = await send_tools_list(read_stream, write_stream)
+            assert "tools" in tools_response, "No tools found in response"
+
+            gdrive_tools = [
+                tool
+                for tool in tools_response["tools"]
+                if "drive" in tool.get("name", "").lower() or "gdrive" in tool.get("name", "").lower()
+            ]
+
+            if not gdrive_tools:
+                pytest.skip("No GDrive tools found")
+
+            create_folder_tool = find_tool_by_name(gdrive_tools, "create_drive_folder")
+            list_folders_tool = find_tool_by_name(gdrive_tools, "list_drive_folders")
+            rename_folder_tool = find_tool_by_name(gdrive_tools, "rename_drive_folder")
+            move_folder_tool = find_tool_by_name(gdrive_tools, "move_drive_folder")
+            delete_folder_tool = find_tool_by_name(gdrive_tools, "delete_drive_folder")
+
+            if not all(
+                [create_folder_tool, list_folders_tool, rename_folder_tool, move_folder_tool, delete_folder_tool]
+            ):
+                pytest.skip("Not all required folder tools found")
+
+            # 1. Create a folder
+            folder_name = f"Test Folder {int(time.time())}"
+            folder_result = await send_tools_call(
+                read_stream,
+                write_stream,
+                create_folder_tool.get("name"),
+                {
+                    "folder_name": folder_name,
+                    "user_id": credentials["email"],
+                },
+            )
+
+            assert folder_result, "Failed to create folder"
+            assert "content" in folder_result, "No content in folder creation response"
+
+            folder_id = None
+            for item in folder_result["content"]:
+                if item.get("type") == "text" and item.get("text"):
+                    try:
+                        folder_data = json.loads(item.get("text"))
+                        if isinstance(folder_data, dict) and "id" in folder_data:
+                            folder_id = folder_data.get("id")
+                            print(f"Created folder with ID: {folder_id}")
+                            break
+                    except json.JSONDecodeError:
+                        continue
+
+            assert folder_id, "Failed to get folder ID"
+
+            list_result = await send_tools_call(
+                read_stream,
+                write_stream,
+                list_folders_tool.get("name"),
+                {
+                    "user_id": credentials["email"],
+                    "limit": 10,
+                },
+            )
+
+            assert list_result, "Failed to list folders"
+            assert "content" in list_result, "No content in list folders response"
+
+            found_folder = False
+            for item in list_result["content"]:
+                if item.get("type") == "text" and item.get("text"):
+                    try:
+                        folders_data = json.loads(item.get("text"))
+                        if isinstance(folders_data, dict) and "files" in folders_data:
+                            for folder in folders_data["files"]:
+                                if folder.get("id") == folder_id:
+                                    found_folder = True
+                                    print(f"Found folder in listing: {folder.get('name')}")
+                                    break
+                    except json.JSONDecodeError:
+                        continue
+
+            assert found_folder, "Created folder not found in folder listing"
+
+            # 3. Rename the folder
+            new_folder_name = f"Renamed Folder {int(time.time())}"
+            rename_result = await send_tools_call(
+                read_stream,
+                write_stream,
+                rename_folder_tool.get("name"),
+                {
+                    "folder_id": folder_id,
+                    "new_name": new_folder_name,
+                    "user_id": credentials["email"],
+                },
+            )
+
+            assert rename_result, "Failed to rename folder"
+            assert "content" in rename_result, "No content in rename folder response"
+
+            renamed_folder_data = None
+            for item in rename_result["content"]:
+                if item.get("type") == "text" and item.get("text"):
+                    try:
+                        folder_data = json.loads(item.get("text"))
+                        if isinstance(folder_data, dict) and "id" in folder_data:
+                            renamed_folder_data = folder_data
+                            print(f"Renamed folder to: {folder_data.get('name')}")
+                            break
+                    except json.JSONDecodeError:
+                        continue
+
+            assert renamed_folder_data, "Failed to get renamed folder data"
+            assert renamed_folder_data.get("name") == new_folder_name, "Folder name not updated correctly"
+
+            subfolder_name = f"Subfolder {int(time.time())}"
+            subfolder_result = await send_tools_call(
+                read_stream,
+                write_stream,
+                create_folder_tool.get("name"),
+                {
+                    "folder_name": subfolder_name,
+                    "parent_folder_id": folder_id,
+                    "user_id": credentials["email"],
+                },
+            )
+
+            assert subfolder_result, "Failed to create subfolder"
+            assert "content" in subfolder_result, "No content in subfolder creation response"
+
+            subfolder_id = None
+            for item in subfolder_result["content"]:
+                if item.get("type") == "text" and item.get("text"):
+                    try:
+                        folder_data = json.loads(item.get("text"))
+                        if isinstance(folder_data, dict) and "id" in folder_data:
+                            subfolder_id = folder_data.get("id")
+                            print(f"Created subfolder with ID: {subfolder_id}")
+                            break
+                    except json.JSONDecodeError:
+                        continue
+
+            assert subfolder_id, "Failed to get subfolder ID"
+
+            # 5. Create another folder to move the subfolder to
+            target_folder_name = f"Target Folder {int(time.time())}"
+            target_folder_result = await send_tools_call(
+                read_stream,
+                write_stream,
+                create_folder_tool.get("name"),
+                {
+                    "folder_name": target_folder_name,
+                    "user_id": credentials["email"],
+                },
+            )
+
+            assert target_folder_result, "Failed to create target folder"
+            assert "content" in target_folder_result, "No content in target folder creation response"
+
+            target_folder_id = None
+            for item in target_folder_result["content"]:
+                if item.get("type") == "text" and item.get("text"):
+                    try:
+                        folder_data = json.loads(item.get("text"))
+                        if isinstance(folder_data, dict) and "id" in folder_data:
+                            target_folder_id = folder_data.get("id")
+                            print(f"Created target folder with ID: {target_folder_id}")
+                            break
+                    except json.JSONDecodeError:
+                        continue
+
+            assert target_folder_id, "Failed to get target folder ID"
+
+            move_result = await send_tools_call(
+                read_stream,
+                write_stream,
+                move_folder_tool.get("name"),
+                {
+                    "folder_id": subfolder_id,
+                    "new_parent_id": target_folder_id,
+                    "user_id": credentials["email"],
+                },
+            )
+
+            assert move_result, "Failed to move subfolder"
+            assert "content" in move_result, "No content in move subfolder response"
+
+            moved_folder_data = None
+            for item in move_result["content"]:
+                if item.get("type") == "text" and item.get("text"):
+                    try:
+                        folder_data = json.loads(item.get("text"))
+                        if isinstance(folder_data, dict) and "id" in folder_data:
+                            moved_folder_data = folder_data
+                            print("Moved subfolder to target folder")
+                            break
+                    except json.JSONDecodeError:
+                        continue
+
+            assert moved_folder_data, "Failed to get moved folder data"
+            assert subfolder_id == moved_folder_data.get("id"), "Moved folder ID should match subfolder ID"
+
+            folders_to_delete = [subfolder_id, folder_id, target_folder_id]
+            deleted_count = 0
+
+            for folder_id_to_delete in folders_to_delete:
+                delete_result = await send_tools_call(
+                    read_stream,
+                    write_stream,
+                    delete_folder_tool.get("name"),
+                    {
+                        "folder_id": folder_id_to_delete,
+                        "user_id": credentials["email"],
+                    },
+                )
+
+                assert delete_result, f"Failed to delete folder {folder_id_to_delete}"
+                assert "content" in delete_result, "No content in delete folder response"
+
+                for item in delete_result["content"]:
+                    if item.get("type") == "text" and item.get("text"):
+                        response_text = item.get("text")
+                        if "successfully deleted" in response_text.lower():
+                            deleted_count += 1
+                            print(f"Deleted folder with ID: {folder_id_to_delete}")
+                            break
+
+            assert deleted_count == len(
+                folders_to_delete
+            ), f"Expected to delete {len(folders_to_delete)} folders, but deleted {deleted_count}"
+
+    @pytest.mark.e2e
     async def test_complex_drive_scenario(self, credentials):
         """Test a complex scenario with multiple Drive operations:
         1. Create and upload multiple dummy files
@@ -652,8 +911,19 @@ class TestMCPGDriveOperations:
             move_tool = find_tool_by_name(gdrive_tools, "move")
             delete_tool = find_tool_by_name(gdrive_tools, "delete")
 
+            create_folder_tool = find_tool_by_name(gdrive_tools, "create_drive_folder")
+            list_folders_tool = find_tool_by_name(gdrive_tools, "list_drive_folders")
+            rename_folder_tool = find_tool_by_name(gdrive_tools, "rename_drive_folder")
+            move_folder_tool = find_tool_by_name(gdrive_tools, "move_drive_folder")
+            delete_folder_tool = find_tool_by_name(gdrive_tools, "delete_drive_folder")
+
             if not all([upload_tool, list_tool, download_tool, rename_tool, move_tool, delete_tool]):
-                pytest.skip("Not all required GDrive tools found")
+                pytest.skip("Not all required GDrive file tools found")
+
+            folder_tools_available = all(
+                [create_folder_tool, list_folders_tool, rename_folder_tool, move_folder_tool, delete_folder_tool]
+            )
+            use_folder_specific_tools = folder_tools_available
 
             temp_dir = tempfile.mkdtemp()
             dummy_files = []
@@ -786,20 +1056,32 @@ class TestMCPGDriveOperations:
 
                 assert len(renamed_files) == min(2, len(uploaded_files)), "Failed to rename files"
 
-                temp_placeholder = os.path.join(temp_dir, ".placeholder")
-                with open(temp_placeholder, "w") as f:
-                    f.write("")
+                if use_folder_specific_tools and create_folder_tool:
+                    folder_name = f"Test Folder {int(time.time())}"
+                    folder_result = await send_tools_call(
+                        read_stream,
+                        write_stream,
+                        create_folder_tool.get("name"),
+                        {
+                            "folder_name": folder_name,
+                            "user_id": credentials["email"],
+                        },
+                    )
+                else:
+                    temp_placeholder = os.path.join(temp_dir, ".placeholder")
+                    with open(temp_placeholder, "w") as f:
+                        f.write("")
 
-                folder_result = await send_tools_call(
-                    read_stream,
-                    write_stream,
-                    upload_tool.get("name"),
-                    {
-                        "file_path": temp_placeholder,
-                        "mime_type": "application/vnd.google-apps.folder",
-                        "user_id": credentials["email"],
-                    },
-                )
+                    folder_result = await send_tools_call(
+                        read_stream,
+                        write_stream,
+                        upload_tool.get("name"),
+                        {
+                            "file_path": temp_placeholder,
+                            "mime_type": "application/vnd.google-apps.folder",
+                            "user_id": credentials["email"],
+                        },
+                    )
 
                 assert folder_result, "Failed to create folder"
                 assert "content" in folder_result, "No content in folder creation response"

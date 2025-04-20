@@ -6,12 +6,17 @@ from . import auth_helper
 from .calendar_tools import create_calendar_event, delete_calendar_event, list_calendar_events, list_calendars
 from .drive_tools import (
     copy_drive_file,
+    create_drive_folder,
     delete_drive_file,
+    delete_drive_folder,
     download_drive_file,
     get_drive_file,
     list_drive_files,
+    list_drive_folders,
     move_drive_file,
+    move_drive_folder,
     rename_drive_file,
+    rename_drive_folder,
     upload_drive_file,
 )
 from .gmail_tools import (
@@ -115,6 +120,17 @@ mcp.tool(description="Delete a file from Google Drive.")(delete_drive_file)
 mcp.tool(description="Rename a file in Google Drive.")(rename_drive_file)
 
 mcp.tool(description="Move a file to a different folder in Google Drive.")(move_drive_file)
+
+# Register Drive folder tools
+mcp.tool(description="Create a new folder in Google Drive.")(create_drive_folder)
+
+mcp.tool(description="List folders in the user's Google Drive with optional filtering.")(list_drive_folders)
+
+mcp.tool(description="Rename a folder in Google Drive.")(rename_drive_folder)
+
+mcp.tool(description="Move a folder to a different location in Google Drive.")(move_drive_folder)
+
+mcp.tool(description="Delete a folder from Google Drive.")(delete_drive_folder)
 
 if __name__ == "__main__":
     logging.basicConfig(

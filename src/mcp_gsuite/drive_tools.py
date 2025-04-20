@@ -12,6 +12,8 @@ from .drive import DriveService
 
 logger = logging.getLogger(__name__)
 
+FOLDER_MIME_TYPE = "application/vnd.google-apps.folder"
+
 
 async def list_drive_files(
     user_id: Annotated[str, get_user_id_description()],
@@ -287,6 +289,213 @@ async def move_drive_file(
     except Exception as e:
         logger.error(f"Error in move_drive_file for {user_id}: {e}", exc_info=True)
         error_msg = f"Error moving file: {e}"
+        if ctx:
+            await ctx.error(error_msg)
+        raise RuntimeError(error_msg) from e
+
+
+async def create_drive_folder(
+    user_id: Annotated[str, get_user_id_description()],
+    folder_name: Annotated[str, "Name of the folder to create."],
+    parent_folder_id: Annotated[
+        str | None, "ID of the parent folder. If not specified, folder will be created in the Drive root."
+    ] = None,
+    ctx: Context | None = None,
+) -> list[TextContent]:
+    """Creates a new folder in Google Drive."""
+    try:
+        if ctx:
+            await ctx.info(f"Creating folder '{folder_name}' for user {user_id}")
+
+        drive_service = auth_helper.get_drive_service(user_id)
+        drive_client = DriveService(drive_service)
+
+        folder = drive_client.upload_file(
+            file_name=folder_name, mime_type=FOLDER_MIME_TYPE, parent_folder_id=parent_folder_id
+        )
+
+        if not folder:
+            if ctx:
+                await ctx.error(f"Failed to create folder '{folder_name}' for user {user_id}")
+            return [TextContent(type="text", text=f"Failed to create folder '{folder_name}'.")]
+
+        if ctx:
+            await ctx.info(f"Successfully created folder with ID: {folder.get('id')}")
+        return [TextContent(type="text", text=json.dumps(folder, indent=2))]
+    except Exception as e:
+        logger.error(f"Error in create_drive_folder for {user_id}: {e}", exc_info=True)
+        error_msg = f"Error creating folder: {e}"
+        if ctx:
+            await ctx.error(error_msg)
+        raise RuntimeError(error_msg) from e
+
+
+async def list_drive_folders(
+    user_id: Annotated[str, get_user_id_description()],
+    query: Annotated[
+        str | None,
+        "Additional search query to combine with folder filter (e.g., 'name contains \"reports\"')",
+    ] = None,
+    limit: Annotated[int, "Maximum number of folders (1-1000, default 100)"] = 100,
+    ctx: Context | None = None,
+) -> list[TextContent]:
+    """Lists folders in the user's Google Drive."""
+    try:
+        folder_query = f"mimeType='{FOLDER_MIME_TYPE}'"
+        if query:
+            folder_query = f"{folder_query} and {query}"
+
+        if ctx:
+            await ctx.info(f"Listing folders for {user_id} with query: '{folder_query}'")
+
+        drive_service = auth_helper.get_drive_service(user_id)
+        drive_client = DriveService(drive_service)
+        folders_result = drive_client.list_files(query=folder_query, page_size=limit)
+
+        if not folders_result.get("files"):
+            if ctx:
+                await ctx.info(f"No folders found for query '{query}' for user {user_id}")
+            return [TextContent(type="text", text="No folders found matching the query.")]
+
+        return [TextContent(type="text", text=json.dumps(folders_result, indent=2))]
+    except Exception as e:
+        logger.error(f"Error in list_drive_folders for {user_id}: {e}", exc_info=True)
+        error_msg = f"Error listing folders: {e}"
+        if ctx:
+            await ctx.error(error_msg)
+        raise RuntimeError(error_msg) from e
+
+
+async def rename_drive_folder(
+    user_id: Annotated[str, get_user_id_description()],
+    folder_id: Annotated[str, "ID of the folder to rename."],
+    new_name: Annotated[str, "New name for the folder."],
+    ctx: Context | None = None,
+) -> list[TextContent]:
+    """Renames a folder in Google Drive."""
+    try:
+        if ctx:
+            await ctx.info(f"Renaming folder {folder_id} to {new_name} for user {user_id}")
+
+        drive_service = auth_helper.get_drive_service(user_id)
+        drive_client = DriveService(drive_service)
+
+        folder = drive_client.get_file(file_id=folder_id)
+        if not folder or folder.get("mimeType") != FOLDER_MIME_TYPE:
+            error_msg = f"Item with ID {folder_id} is not a folder."
+            if ctx:
+                await ctx.error(error_msg)
+            return [TextContent(type="text", text=error_msg)]
+
+        updated_folder = drive_client.rename_file(file_id=folder_id, new_name=new_name)
+
+        if not updated_folder:
+            if ctx:
+                await ctx.error(f"Failed to rename folder {folder_id} for user {user_id}")
+            return [TextContent(type="text", text=f"Failed to rename folder with ID {folder_id}.")]
+
+        if ctx:
+            await ctx.info(f"Successfully renamed folder with ID: {folder_id} to {new_name}")
+        return [TextContent(type="text", text=json.dumps(updated_folder, indent=2))]
+    except Exception as e:
+        logger.error(f"Error in rename_drive_folder for {user_id}: {e}", exc_info=True)
+        error_msg = f"Error renaming folder: {e}"
+        if ctx:
+            await ctx.error(error_msg)
+        raise RuntimeError(error_msg) from e
+
+
+async def move_drive_folder(
+    user_id: Annotated[str, get_user_id_description()],
+    folder_id: Annotated[str, "ID of the folder to move."],
+    new_parent_id: Annotated[str, "ID of the destination folder."],
+    remove_previous_parents: Annotated[
+        bool,
+        "Whether to remove the folder from its current parent. If False, the folder will be in multiple locations.",
+    ] = True,
+    ctx: Context | None = None,
+) -> list[TextContent]:
+    """Moves a folder to a different location in Google Drive."""
+    try:
+        if ctx:
+            await ctx.info(f"Moving folder {folder_id} to folder {new_parent_id} for user {user_id}")
+
+        drive_service = auth_helper.get_drive_service(user_id)
+        drive_client = DriveService(drive_service)
+
+        folder = drive_client.get_file(file_id=folder_id)
+        if not folder or folder.get("mimeType") != FOLDER_MIME_TYPE:
+            error_msg = f"Item with ID {folder_id} is not a folder."
+            if ctx:
+                await ctx.error(error_msg)
+            return [TextContent(type="text", text=error_msg)]
+
+        dest_folder = drive_client.get_file(file_id=new_parent_id)
+        if not dest_folder or dest_folder.get("mimeType") != FOLDER_MIME_TYPE:
+            error_msg = f"Destination with ID {new_parent_id} is not a folder."
+            if ctx:
+                await ctx.error(error_msg)
+            return [TextContent(type="text", text=error_msg)]
+
+        if folder_id == new_parent_id:
+            error_msg = "Cannot move a folder into itself."
+            if ctx:
+                await ctx.error(error_msg)
+            return [TextContent(type="text", text=error_msg)]
+
+        moved_folder = drive_client.move_file(
+            file_id=folder_id, new_parent_id=new_parent_id, remove_previous_parents=remove_previous_parents
+        )
+
+        if not moved_folder:
+            if ctx:
+                await ctx.error(f"Failed to move folder {folder_id} for user {user_id}")
+            return [TextContent(type="text", text=f"Failed to move folder with ID {folder_id}.")]
+
+        if ctx:
+            await ctx.info(f"Successfully moved folder with ID: {folder_id} to folder {new_parent_id}")
+        return [TextContent(type="text", text=json.dumps(moved_folder, indent=2))]
+    except Exception as e:
+        logger.error(f"Error in move_drive_folder for {user_id}: {e}", exc_info=True)
+        error_msg = f"Error moving folder: {e}"
+        if ctx:
+            await ctx.error(error_msg)
+        raise RuntimeError(error_msg) from e
+
+
+async def delete_drive_folder(
+    user_id: Annotated[str, get_user_id_description()],
+    folder_id: Annotated[str, "ID of the folder to delete."],
+    ctx: Context | None = None,
+) -> list[TextContent]:
+    """Deletes a folder from Google Drive."""
+    try:
+        if ctx:
+            await ctx.info(f"Deleting folder {folder_id} for user {user_id}")
+
+        drive_service = auth_helper.get_drive_service(user_id)
+        drive_client = DriveService(drive_service)
+
+        folder = drive_client.get_file(file_id=folder_id)
+        if not folder or folder.get("mimeType") != FOLDER_MIME_TYPE:
+            error_msg = f"Item with ID {folder_id} is not a folder."
+            if ctx:
+                await ctx.error(error_msg)
+            return [TextContent(type="text", text=error_msg)]
+
+        success = drive_client.delete_file(file_id=folder_id)
+
+        if success:
+            if ctx:
+                await ctx.info(f"Successfully deleted folder with ID: {folder_id}")
+            return [TextContent(type="text", text=f"Successfully deleted folder with ID: {folder_id}")]
+        else:
+            if ctx:
+                await ctx.warning(f"Failed to delete folder {folder_id} for user {user_id}")
+            return [TextContent(type="text", text=f"Failed to delete folder with ID: {folder_id}")]
+    except Exception as e:
+        logger.error(f"Error in delete_drive_folder for {user_id}: {e}", exc_info=True)
+        error_msg = f"Error deleting folder: {e}"
         if ctx:
             await ctx.error(error_msg)
         raise RuntimeError(error_msg) from e
