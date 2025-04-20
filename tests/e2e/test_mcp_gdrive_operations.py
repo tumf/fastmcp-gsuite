@@ -601,3 +601,252 @@ class TestMCPGDriveOperations:
                         break
 
             assert success, "No confirmation of successful deletion found in response"
+
+    @pytest.mark.e2e
+    async def test_complex_drive_scenario(self, credentials):
+        """Test a complex scenario with multiple Drive operations:
+        1. Create and upload multiple dummy files
+        2. List the uploaded files
+        3. Rename some files
+        4. Create a folder
+        5. Move files to the folder
+        6. Remove all dummy files and the folder
+        """
+        env = os.environ.copy()
+        env.update(
+            {
+                "GSUITE_CREDENTIALS_FILE": credentials["credentials_file"],
+                "GSUITE_EMAIL": credentials["email"],
+            }
+        )
+
+        server_params = StdioServerParameters(command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env)
+
+        async with stdio_client(server_params) as (read_stream, write_stream):
+            init_result = await send_initialize(read_stream, write_stream)
+            assert init_result, "Failed to initialize MCP server"
+
+            tools_response = await send_tools_list(read_stream, write_stream)
+            assert "tools" in tools_response, "No tools found in response"
+
+            gdrive_tools = [
+                tool
+                for tool in tools_response["tools"]
+                if "drive" in tool.get("name", "").lower() or "gdrive" in tool.get("name", "").lower()
+            ]
+
+            if not gdrive_tools:
+                pytest.skip("No GDrive tools found")
+
+            upload_tool = find_tool_by_name(gdrive_tools, "upload")
+            list_tool = find_tool_by_name(gdrive_tools, "list")
+            rename_tool = find_tool_by_name(gdrive_tools, "rename")
+            move_tool = find_tool_by_name(gdrive_tools, "move")
+            delete_tool = find_tool_by_name(gdrive_tools, "delete")
+
+            if not all([upload_tool, list_tool, rename_tool, move_tool, delete_tool]):
+                pytest.skip("Not all required GDrive tools found")
+
+            temp_dir = tempfile.mkdtemp()
+            dummy_files = []
+            file_count = 5  # Create 5 dummy files for testing
+
+            for i in range(file_count):
+                file_path = os.path.join(temp_dir, f"dummy_file_{i}.txt")
+                with open(file_path, "w") as f:
+                    f.write(f"This is dummy file {i} for Drive tools e2e test.\n")
+                dummy_files.append(file_path)
+
+            try:
+                uploaded_files = []
+                for file_path in dummy_files:
+                    upload_result = await send_tools_call(
+                        read_stream,
+                        write_stream,
+                        upload_tool.get("name"),
+                        {
+                            "file_path": file_path,
+                            "user_id": credentials["email"],
+                        },
+                    )
+
+                    assert upload_result, f"Failed to upload file {file_path}"
+                    assert "content" in upload_result, "No content in upload response"
+
+                    for item in upload_result["content"]:
+                        if item.get("type") == "text" and item.get("text"):
+                            try:
+                                file_data = json.loads(item.get("text"))
+                                if isinstance(file_data, dict) and "id" in file_data:
+                                    uploaded_files.append(file_data)
+                                    print(f"Uploaded file: {file_data.get('name')} (ID: {file_data.get('id')})")
+                                    break
+                            except json.JSONDecodeError:
+                                continue
+
+                assert (
+                    len(uploaded_files) == file_count
+                ), f"Expected {file_count} uploaded files, got {len(uploaded_files)}"
+
+                list_result = await send_tools_call(
+                    read_stream,
+                    write_stream,
+                    list_tool.get("name"),
+                    {
+                        "user_id": credentials["email"],
+                        "query": "name contains 'dummy_file'",
+                        "limit": 10,
+                    },
+                )
+
+                assert list_result, "Failed to list files"
+                assert "content" in list_result, "No content in list response"
+
+                listed_files = []
+                for item in list_result["content"]:
+                    if item.get("type") == "text" and item.get("text"):
+                        try:
+                            files_data = json.loads(item.get("text"))
+                            if isinstance(files_data, dict) and "files" in files_data:
+                                listed_files = files_data["files"]
+                                break
+                        except json.JSONDecodeError:
+                            continue
+
+                assert len(listed_files) >= file_count, f"Expected at least {file_count} files in listing"
+
+                renamed_files = []
+                for i in range(min(2, len(uploaded_files))):
+                    file_id = uploaded_files[i].get("id")
+                    old_name = uploaded_files[i].get("name")
+                    new_name = f"renamed_{old_name}"
+
+                    rename_result = await send_tools_call(
+                        read_stream,
+                        write_stream,
+                        rename_tool.get("name"),
+                        {
+                            "file_id": file_id,
+                            "new_name": new_name,
+                            "user_id": credentials["email"],
+                        },
+                    )
+
+                    assert rename_result, f"Failed to rename file {file_id}"
+                    assert "content" in rename_result, "No content in rename response"
+
+                    for item in rename_result["content"]:
+                        if item.get("type") == "text" and item.get("text"):
+                            try:
+                                file_data = json.loads(item.get("text"))
+                                if isinstance(file_data, dict) and "id" in file_data:
+                                    renamed_files.append(file_data)
+                                    print(f"Renamed file to: {file_data.get('name')}")
+                                    break
+                            except json.JSONDecodeError:
+                                continue
+
+                assert len(renamed_files) == min(2, len(uploaded_files)), "Failed to rename files"
+
+                temp_placeholder = os.path.join(temp_dir, ".placeholder")
+                with open(temp_placeholder, "w") as f:
+                    f.write("")
+
+                folder_result = await send_tools_call(
+                    read_stream,
+                    write_stream,
+                    upload_tool.get("name"),
+                    {
+                        "file_path": temp_placeholder,
+                        "mime_type": "application/vnd.google-apps.folder",
+                        "user_id": credentials["email"],
+                    },
+                )
+
+                assert folder_result, "Failed to create folder"
+                assert "content" in folder_result, "No content in folder creation response"
+
+                folder_id = None
+                for item in folder_result["content"]:
+                    if item.get("type") == "text" and item.get("text"):
+                        try:
+                            folder_data = json.loads(item.get("text"))
+                            if isinstance(folder_data, dict) and "id" in folder_data:
+                                folder_id = folder_data.get("id")
+                                print(f"Created folder with ID: {folder_id}")
+                                break
+                        except json.JSONDecodeError:
+                            continue
+
+                assert folder_id, "Failed to get folder ID"
+
+                moved_files = []
+                for i in range(2, min(4, len(uploaded_files))):
+                    file_id = uploaded_files[i].get("id")
+                    file_name = uploaded_files[i].get("name")
+
+                    move_result = await send_tools_call(
+                        read_stream,
+                        write_stream,
+                        move_tool.get("name"),
+                        {
+                            "file_id": file_id,
+                            "new_parent_id": folder_id,
+                            "user_id": credentials["email"],
+                        },
+                    )
+
+                    assert move_result, f"Failed to move file {file_id}"
+                    assert "content" in move_result, "No content in move response"
+
+                    for item in move_result["content"]:
+                        if item.get("type") == "text" and item.get("text"):
+                            try:
+                                file_data = json.loads(item.get("text"))
+                                if isinstance(file_data, dict) and "id" in file_data:
+                                    moved_files.append(file_data)
+                                    print(f"Moved file: {file_name} to folder")
+                                    break
+                            except json.JSONDecodeError:
+                                continue
+
+                assert len(moved_files) == min(2, len(uploaded_files) - 2), "Failed to move files"
+
+                all_to_delete = [*uploaded_files, {"id": folder_id}]
+                deleted_count = 0
+
+                for file_data in all_to_delete:
+                    file_id = file_data.get("id")
+                    delete_result = await send_tools_call(
+                        read_stream,
+                        write_stream,
+                        delete_tool.get("name"),
+                        {
+                            "file_id": file_id,
+                            "user_id": credentials["email"],
+                        },
+                    )
+
+                    assert delete_result, f"Failed to delete file/folder {file_id}"
+                    assert "content" in delete_result, "No content in delete response"
+
+                    for item in delete_result["content"]:
+                        if item.get("type") == "text" and item.get("text"):
+                            response_text = item.get("text")
+                            if "successfully deleted" in response_text.lower():
+                                deleted_count += 1
+                                print(f"Deleted file/folder with ID: {file_id}")
+                                break
+
+                assert deleted_count == len(
+                    all_to_delete
+                ), f"Expected to delete {len(all_to_delete)} items, but deleted {deleted_count}"
+
+            finally:
+                for file_path in dummy_files:
+                    if os.path.exists(file_path):
+                        os.remove(file_path)
+                if os.path.exists(temp_placeholder):
+                    os.remove(temp_placeholder)
+                if os.path.exists(temp_dir):
+                    os.rmdir(temp_dir)
