@@ -607,10 +607,11 @@ class TestMCPGDriveOperations:
         """Test a complex scenario with multiple Drive operations:
         1. Create and upload multiple dummy files
         2. List the uploaded files
-        3. Rename some files
-        4. Create a folder
-        5. Move files to the folder
-        6. Remove all dummy files and the folder
+        3. Download one of the uploaded files
+        4. Rename some files
+        5. Create a folder
+        6. Move files to the folder
+        7. Remove all dummy files and the folder
         """
         env = os.environ.copy()
         env.update(
@@ -640,11 +641,12 @@ class TestMCPGDriveOperations:
 
             upload_tool = find_tool_by_name(gdrive_tools, "upload")
             list_tool = find_tool_by_name(gdrive_tools, "list")
+            download_tool = find_tool_by_name(gdrive_tools, "download")
             rename_tool = find_tool_by_name(gdrive_tools, "rename")
             move_tool = find_tool_by_name(gdrive_tools, "move")
             delete_tool = find_tool_by_name(gdrive_tools, "delete")
 
-            if not all([upload_tool, list_tool, rename_tool, move_tool, delete_tool]):
+            if not all([upload_tool, list_tool, download_tool, rename_tool, move_tool, delete_tool]):
                 pytest.skip("Not all required GDrive tools found")
 
             temp_dir = tempfile.mkdtemp()
@@ -714,6 +716,35 @@ class TestMCPGDriveOperations:
                             continue
 
                 assert len(listed_files) >= file_count, f"Expected at least {file_count} files in listing"
+
+                # Download one of the uploaded files
+                download_file_id = uploaded_files[0].get("id")
+                download_result = await send_tools_call(
+                    read_stream,
+                    write_stream,
+                    download_tool.get("name"),
+                    {
+                        "file_id": download_file_id,
+                        "user_id": credentials["email"],
+                    },
+                )
+
+                assert download_result, f"Failed to download file {download_file_id}"
+                assert "content" in download_result, "No content in download response"
+
+                downloaded_file_info = None
+                for item in download_result["content"]:
+                    if item.get("type") == "text" and item.get("text"):
+                        try:
+                            file_data = json.loads(item.get("text"))
+                            if isinstance(file_data, dict) and "name" in file_data:
+                                downloaded_file_info = file_data
+                                print(f"Downloaded file: {file_data.get('name')} (Size: {file_data.get('size')})")
+                                break
+                        except json.JSONDecodeError:
+                            continue
+
+                assert downloaded_file_info is not None, "Failed to get download file information"
 
                 renamed_files = []
                 for i in range(min(2, len(uploaded_files))):
