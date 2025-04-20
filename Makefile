@@ -108,12 +108,12 @@ clean:
 # Install dependencies
 install:
 	@echo "Installing dependencies..."
-	uv pip install -e ".[dev]"
+	uv sync --dev
 
 # Update dependencies
 update:
 	@echo "Updating dependencies..."
-	uv pip install --upgrade -e ".[dev]"
+	uv sync --dev
 
 # Build package
 build: clean
