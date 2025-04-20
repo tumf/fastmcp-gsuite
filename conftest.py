@@ -4,11 +4,14 @@ import pytest
 def pytest_configure(config):
     """Register global e2e marker"""
     config.addinivalue_line("markers", "e2e: mark a test as an end-to-end test")
+    config.addinivalue_line("markers", "asyncio: mark a test as an asyncio test")
 
 
 def pytest_addoption(parser):
     """Add e2e command line option"""
-    parser.addoption("--run-e2e", action="store_true", default=False, help="Run e2e tests")
+    parser.addoption(
+        "--run-e2e", action="store_true", default=False, help="Run e2e tests"
+    )
 
 
 def pytest_collection_modifyitems(config, items):
