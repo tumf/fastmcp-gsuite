@@ -4,19 +4,14 @@ import os
 import shutil
 
 import pytest
-from chuk_mcp.mcp_client.messages.initialize.send_messages import \
-    send_initialize
+from chuk_mcp.mcp_client.messages.initialize.send_messages import send_initialize
 from chuk_mcp.mcp_client.messages.ping.send_messages import send_ping
-from chuk_mcp.mcp_client.messages.tools.send_messages import (send_tools_call,
-                                                              send_tools_list)
+from chuk_mcp.mcp_client.messages.tools.send_messages import send_tools_call, send_tools_list
 from chuk_mcp.mcp_client.transport.stdio.stdio_client import stdio_client
-from chuk_mcp.mcp_client.transport.stdio.stdio_server_parameters import \
-    StdioServerParameters
+from chuk_mcp.mcp_client.transport.stdio.stdio_server_parameters import StdioServerParameters
 
 # Get UV path from environment variables or PATH
-UV_PATH = (
-    os.environ.get("UV_PATH") or shutil.which("uv") or "/Users/tumf/.pyenv/shims/uv"
-)
+UV_PATH = os.environ.get("UV_PATH") or shutil.which("uv") or "/Users/tumf/.pyenv/shims/uv"
 # Temporarily disable skipping for test execution
 # if not UV_PATH:
 #     pytest.skip("uv command not found in PATH or UV_PATH not set")
@@ -37,9 +32,7 @@ class TestMCPGsuite:
         )
 
         # Set MCP Gsuite server parameters
-        server_params = StdioServerParameters(
-            command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env
-        )
+        server_params = StdioServerParameters(command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env)
 
         # Connect to the server
         async with stdio_client(server_params) as (read_stream, write_stream):
@@ -64,32 +57,16 @@ class TestMCPGsuite:
             print(f"Available tools: {tool_names}")
 
             # Find Gmail related tools (names may vary by environment)
-            gmail_tools = [
-                tool
-                for tool in tools_response["tools"]
-                if "gmail" in tool["name"].lower()
-            ]
-            assert (
-                len(gmail_tools) > 0
-            ), f"No Gmail tools found. Available tools: {tool_names}"
+            gmail_tools = [tool for tool in tools_response["tools"] if "gmail" in tool["name"].lower()]
+            assert len(gmail_tools) > 0, f"No Gmail tools found. Available tools: {tool_names}"
 
             # Find Calendar related tools
-            calendar_tools = [
-                tool
-                for tool in tools_response["tools"]
-                if "calendar" in tool["name"].lower()
-            ]
-            assert (
-                len(calendar_tools) > 0
-            ), f"No Calendar tools found. Available tools: {tool_names}"
+            calendar_tools = [tool for tool in tools_response["tools"] if "calendar" in tool["name"].lower()]
+            assert len(calendar_tools) > 0, f"No Calendar tools found. Available tools: {tool_names}"
 
             # Verify specific tool names (confirmed in previous executions)
-            assert (
-                "query_gmail_emails" in tool_names
-            ), f"query_gmail_emails tool not found in {tool_names}"
-            assert (
-                "list_calendar_events" in tool_names
-            ), f"list_calendar_events tool not found in {tool_names}"
+            assert "query_gmail_emails" in tool_names, f"query_gmail_emails tool not found in {tool_names}"
+            assert "list_calendar_events" in tool_names, f"list_calendar_events tool not found in {tool_names}"
 
     @pytest.mark.e2e
     async def test_gmail_tool_list_messages(self, oauth_token):
@@ -103,9 +80,7 @@ class TestMCPGsuite:
             }
         )
 
-        server_params = StdioServerParameters(
-            command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env
-        )
+        server_params = StdioServerParameters(command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env)
 
         async with stdio_client(server_params) as (read_stream, write_stream):
             # Initialize
@@ -123,14 +98,10 @@ class TestMCPGsuite:
             )
 
             assert result, "Tool call returned no result"
-            assert not result.get(
-                "isError", False
-            ), f"Tool call returned error: {result}"
+            assert not result.get("isError", False), f"Tool call returned error: {result}"
 
             # Verify that the response is a dictionary
-            assert isinstance(
-                result, dict
-            ), f"Result is not a dictionary: {type(result)}"
+            assert isinstance(result, dict), f"Result is not a dictionary: {type(result)}"
 
             # Verify response
             assert "content" in result, f"No content field in response: {result}"
@@ -139,9 +110,7 @@ class TestMCPGsuite:
             # Print response for debugging
             for item in result["content"]:
                 if item.get("type") == "text" and item.get("text"):
-                    print(
-                        f"Response text: {item.get('text')[:100]}..."
-                    )  # Print first 100 chars
+                    print(f"Response text: {item.get('text')[:100]}...")  # Print first 100 chars
 
             # Check if we have a valid response (individual JSON objects or "No emails found" message)
             is_valid_response = False
@@ -179,9 +148,7 @@ class TestMCPGsuite:
             }
         )
 
-        server_params = StdioServerParameters(
-            command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env
-        )
+        server_params = StdioServerParameters(command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env)
 
         async with stdio_client(server_params) as (read_stream, write_stream):
             # Initialize
@@ -209,14 +176,10 @@ class TestMCPGsuite:
             )
 
             assert result, "Tool call returned no result"
-            assert not result.get(
-                "isError", False
-            ), f"Tool call returned error: {result}"
+            assert not result.get("isError", False), f"Tool call returned error: {result}"
 
             # Verify that the response is a dictionary
-            assert isinstance(
-                result, dict
-            ), f"Result is not a dictionary: {type(result)}"
+            assert isinstance(result, dict), f"Result is not a dictionary: {type(result)}"
 
             # Verify response
             assert "content" in result, f"No content field in response: {result}"
@@ -234,9 +197,7 @@ class TestMCPGsuite:
             }
         )
 
-        server_params = StdioServerParameters(
-            command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env
-        )
+        server_params = StdioServerParameters(command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env)
 
         async with stdio_client(server_params) as (read_stream, write_stream):
             # Initialize
@@ -250,21 +211,16 @@ class TestMCPGsuite:
                 arguments={
                     "user_id": oauth_token["email"],
                     "to": oauth_token["email"],  # Send to self for testing
-                    "subject": "E2E Test Draft - "
-                    + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "subject": "E2E Test Draft - " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                     "body": "This is a test draft message created during E2E testing.",
                 },
             )
 
             assert result, "Tool call returned no result"
-            assert not result.get(
-                "isError", False
-            ), f"Tool call returned error: {result}"
+            assert not result.get("isError", False), f"Tool call returned error: {result}"
 
             # Verify that the response is a dictionary
-            assert isinstance(
-                result, dict
-            ), f"Result is not a dictionary: {type(result)}"
+            assert isinstance(result, dict), f"Result is not a dictionary: {type(result)}"
 
             # Verify response content
             assert "content" in result, f"No content field in response: {result}"
@@ -305,9 +261,7 @@ class TestMCPGsuite:
             }
         )
 
-        server_params = StdioServerParameters(
-            command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env
-        )
+        server_params = StdioServerParameters(command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env)
 
         async with stdio_client(server_params) as (read_stream, write_stream):
             # Initialize
@@ -325,22 +279,15 @@ class TestMCPGsuite:
             )
 
             assert result, "Tool call returned no result"
-            assert not result.get(
-                "isError", False
-            ), f"Tool call returned error: {result}"
+            assert not result.get("isError", False), f"Tool call returned error: {result}"
 
             # Verify that the response is a dictionary
-            assert isinstance(
-                result, dict
-            ), f"Result is not a dictionary: {type(result)}"
+            assert isinstance(result, dict), f"Result is not a dictionary: {type(result)}"
 
             # Success should be indicated in the response
             success = False
             for item in result.get("content", []):
-                if (
-                    item.get("type") == "text"
-                    and "success" in item.get("text", "").lower()
-                ):
+                if item.get("type") == "text" and "success" in item.get("text", "").lower():
                     success = True
                     break
 
@@ -363,9 +310,7 @@ class TestMCPGsuite:
             }
         )
 
-        server_params = StdioServerParameters(
-            command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env
-        )
+        server_params = StdioServerParameters(command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env)
 
         async with stdio_client(server_params) as (read_stream, write_stream):
             # Initialize
@@ -383,9 +328,7 @@ class TestMCPGsuite:
             )
 
             assert list_result, "Tool call to list messages returned no result"
-            assert not list_result.get(
-                "isError", False
-            ), f"Tool call to list messages returned error: {list_result}"
+            assert not list_result.get("isError", False), f"Tool call to list messages returned error: {list_result}"
 
             # Extract a message ID to reply to
             message_id = None
@@ -420,9 +363,7 @@ class TestMCPGsuite:
             )
 
             assert reply_result, "Tool call to reply returned no result"
-            assert not reply_result.get(
-                "isError", False
-            ), f"Tool call to reply returned error: {reply_result}"
+            assert not reply_result.get("isError", False), f"Tool call to reply returned error: {reply_result}"
 
             # Extract the draft ID for cleanup
             draft_id = None
@@ -465,12 +406,8 @@ class TestMCPGsuite:
                         "draft_id": draft_id,
                     },
                 )
-                assert (
-                    delete_result
-                ), "Tool call to delete reply draft returned no result"
-                assert not delete_result.get(
-                    "isError", False
-                ), f"Error deleting reply draft: {delete_result}"
+                assert delete_result, "Tool call to delete reply draft returned no result"
+                assert not delete_result.get("isError", False), f"Error deleting reply draft: {delete_result}"
                 print(f"Successfully deleted reply draft with ID: {draft_id}")
                 # Clear environment variable
                 if "E2E_TEST_REPLY_DRAFT_ID" in os.environ:
@@ -488,9 +425,7 @@ class TestMCPGsuite:
             }
         )
 
-        server_params = StdioServerParameters(
-            command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env
-        )
+        server_params = StdioServerParameters(command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env)
 
         async with stdio_client(server_params) as (read_stream, write_stream):
             # Initialize
@@ -509,9 +444,7 @@ class TestMCPGsuite:
             )
 
             assert list_result, "Tool call to list messages returned no result"
-            assert not list_result.get(
-                "isError", False
-            ), f"Tool call to list messages returned error: {list_result}"
+            assert not list_result.get("isError", False), f"Tool call to list messages returned error: {list_result}"
 
             # Extract a message ID that has attachments
             message_id = None
@@ -558,13 +491,9 @@ class TestMCPGsuite:
                             if isinstance(data, dict) and "payload" in data:
                                 parts = data["payload"].get("parts", [])
                                 for part in parts:
-                                    if part.get("filename") and part.get(
-                                        "body", {}
-                                    ).get("attachmentId"):
+                                    if part.get("filename") and part.get("body", {}).get("attachmentId"):
                                         attachment_id = part["body"]["attachmentId"]
-                                        print(
-                                            f"Found attachment: {part['filename']} with ID: {attachment_id}"
-                                        )
+                                        print(f"Found attachment: {part['filename']} with ID: {attachment_id}")
                                         break
                         except json.JSONDecodeError:
                             # If not JSON, try to find attachment ID in text
@@ -621,9 +550,7 @@ class TestMCPGsuite:
             }
         )
 
-        server_params = StdioServerParameters(
-            command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env
-        )
+        server_params = StdioServerParameters(command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env)
 
         async with stdio_client(server_params) as (read_stream, write_stream):
             # Initialize
@@ -642,9 +569,7 @@ class TestMCPGsuite:
             )
 
             assert list_result, "Tool call to list messages returned no result"
-            assert not list_result.get(
-                "isError", False
-            ), f"Tool call to list messages returned error: {list_result}"
+            assert not list_result.get("isError", False), f"Tool call to list messages returned error: {list_result}"
 
             # Extract message IDs that may have attachments
             message_ids = []
@@ -654,9 +579,7 @@ class TestMCPGsuite:
                         data = json.loads(item["text"])
                         if isinstance(data, list) and len(data) > 0:
                             # Get message IDs from the list
-                            message_ids = [
-                                msg.get("id") for msg in data[:2]
-                            ]  # Limit to first 2
+                            message_ids = [msg.get("id") for msg in data[:2]]  # Limit to first 2
                             break
                     except (json.JSONDecodeError, IndexError, KeyError):
                         continue
@@ -690,10 +613,7 @@ class TestMCPGsuite:
                 has_files = False
                 for item in save_result.get("content", []):
                     if item.get("type") == "text" and item.get("text"):
-                        if (
-                            "saved" in item["text"].lower()
-                            and "attachment" in item["text"].lower()
-                        ):
+                        if "saved" in item["text"].lower() and "attachment" in item["text"].lower():
                             has_files = True
                             break
 

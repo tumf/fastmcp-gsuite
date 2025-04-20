@@ -8,9 +8,7 @@ class DriveService:
             raise ValueError("A valid Google API service client must be provided.")
         self.service = service
 
-    def list_files(
-        self, query=None, page_size=100, order_by=None, corpora=None
-    ) -> list:
+    def list_files(self, query=None, page_size=100, order_by=None, corpora=None) -> list:
         """
         Lists files in the user's Google Drive.
 
@@ -83,11 +81,7 @@ class DriveService:
             dict: File data including content or None if download fails
         """
         try:
-            file = (
-                self.service.files()
-                .get(fileId=file_id, fields="name,mimeType")
-                .execute()
-            )
+            file = self.service.files().get(fileId=file_id, fields="name,mimeType").execute()
 
             request = self.service.files().get_media(fileId=file_id)
             file_content = request.execute()

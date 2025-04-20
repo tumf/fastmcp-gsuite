@@ -31,16 +31,9 @@ async def query_gmail_emails(
         emails = gmail_service.query_emails(query=query, max_results=max_results)
         if not emails:
             if ctx:
-                await ctx.info(
-                    f"No emails found for query '{query}' for user {user_id}"
-                )
-            return [
-                TextContent(type="text", text="No emails found matching the query.")
-            ]
-        return [
-            TextContent(type="text", text=json.dumps(email, indent=2))
-            for email in emails
-        ]
+                await ctx.info(f"No emails found for query '{query}' for user {user_id}")
+            return [TextContent(type="text", text="No emails found matching the query.")]
+        return [TextContent(type="text", text=json.dumps(email, indent=2)) for email in emails]
     except Exception as e:
         logger.error(f"Error in query_gmail_emails for {user_id}: {e}", exc_info=True)
         error_msg = f"Error querying emails: {e}"
@@ -57,23 +50,15 @@ async def get_email_details(
     """Retrieves detailed information for a single email, including body and attachments."""
     try:
         if ctx:
-            await ctx.info(
-                f"Fetching details for email ID {email_id} for user {user_id}"
-            )
+            await ctx.info(f"Fetching details for email ID {email_id} for user {user_id}")
         g_service = auth_helper.get_gmail_service(user_id)
         gmail_service = gmail_impl.GmailService(g_service)
-        email_details, attachments = gmail_service.get_email_by_id_with_attachments(
-            email_id=email_id
-        )
+        email_details, attachments = gmail_service.get_email_by_id_with_attachments(email_id=email_id)
 
         if not email_details:
             if ctx:
-                await ctx.warning(
-                    f"Email with ID {email_id} not found for user {user_id}"
-                )
-            return [
-                TextContent(type="text", text=f"Email with ID {email_id} not found.")
-            ]
+                await ctx.warning(f"Email with ID {email_id} not found for user {user_id}")
+            return [TextContent(type="text", text=f"Email with ID {email_id} not found.")]
 
         full_details = {
             "email": email_details,
@@ -141,9 +126,7 @@ async def bulk_get_gmail_emails(
                     results.append(full_details)
                 else:
                     if ctx:
-                        await ctx.warning(
-                            f"Email with ID {email_id} not found for user {user_id}"
-                        )
+                        await ctx.warning(f"Email with ID {email_id} not found for user {user_id}")
             except Exception as inner_e:
                 logger.error(
                     f"Error fetching email ID {email_id} for {user_id}: {inner_e}",
@@ -154,9 +137,7 @@ async def bulk_get_gmail_emails(
 
         if not results:
             if ctx:
-                await ctx.info(
-                    f"No emails found or retrieved for the given IDs for user {user_id}"
-                )
+                await ctx.info(f"No emails found or retrieved for the given IDs for user {user_id}")
             return [
                 TextContent(
                     type="text",
@@ -177,9 +158,7 @@ async def bulk_get_gmail_emails(
         # Return error message in TextContent for bulk operations instead of raising?
         # For consistency with single-get, raising might be better, but bulk could partially succeed.
         # Let's return an error message for now.
-        return [
-            TextContent(type="text", text=f"Error processing bulk email request: {e}")
-        ]
+        return [TextContent(type="text", text=f"Error processing bulk email request: {e}")]
 
 
 async def create_gmail_draft(
@@ -193,9 +172,7 @@ async def create_gmail_draft(
     """Creates a draft email in Gmail."""
     try:
         if ctx:
-            await ctx.info(
-                f"Creating draft email for user {user_id} with subject '{subject}'"
-            )
+            await ctx.info(f"Creating draft email for user {user_id} with subject '{subject}'")
         g_service = auth_helper.get_gmail_service(user_id)
         gmail_service = gmail_impl.GmailService(g_service)
         draft = gmail_service.create_draft(to=to, subject=subject, body=body, cc=cc)
@@ -224,9 +201,7 @@ async def delete_gmail_draft(
     """Deletes a draft email from Gmail."""
     try:
         if ctx:
-            await ctx.info(
-                f"Deleting draft email with ID {draft_id} for user {user_id}"
-            )
+            await ctx.info(f"Deleting draft email with ID {draft_id} for user {user_id}")
         g_service = auth_helper.get_gmail_service(user_id)
         gmail_service = gmail_impl.GmailService(g_service)
         success = gmail_service.delete_draft(draft_id=draft_id)
@@ -234,19 +209,11 @@ async def delete_gmail_draft(
         if success:
             if ctx:
                 await ctx.info(f"Successfully deleted draft with ID: {draft_id}")
-            return [
-                TextContent(
-                    type="text", text=f"Successfully deleted draft ID: {draft_id}"
-                )
-            ]
+            return [TextContent(type="text", text=f"Successfully deleted draft ID: {draft_id}")]
         else:
             if ctx:
-                await ctx.warning(
-                    f"Failed to delete draft ID {draft_id} for user {user_id}"
-                )
-            return [
-                TextContent(type="text", text=f"Failed to delete draft ID: {draft_id}")
-            ]
+                await ctx.warning(f"Failed to delete draft ID {draft_id} for user {user_id}")
+            return [TextContent(type="text", text=f"Failed to delete draft ID: {draft_id}")]
     except Exception as e:
         logger.error(f"Error in delete_gmail_draft for {user_id}: {e}", exc_info=True)
         error_msg = f"Error deleting draft email: {e}"
@@ -257,34 +224,24 @@ async def delete_gmail_draft(
 
 async def create_gmail_reply(
     user_id: Annotated[str, get_user_id_description()],
-    original_message_id: Annotated[
-        str, "The ID of the original email message to reply to."
-    ],
+    original_message_id: Annotated[str, "The ID of the original email message to reply to."],
     reply_body: Annotated[str, "The body text of the reply."],
-    send: Annotated[
-        bool, "If True, sends the reply immediately. If False, saves as draft."
-    ] = False,
+    send: Annotated[bool, "If True, sends the reply immediately. If False, saves as draft."] = False,
     cc: Annotated[list[str] | None, "Optional list of email addresses to CC."] = None,
     ctx: Context | None = None,
 ) -> list[TextContent]:
     """Creates a reply to an existing Gmail email message."""
     try:
         if ctx:
-            await ctx.info(
-                f"Creating reply to message ID {original_message_id} for user {user_id}"
-            )
+            await ctx.info(f"Creating reply to message ID {original_message_id} for user {user_id}")
         g_service = auth_helper.get_gmail_service(user_id)
         gmail_service = gmail_impl.GmailService(g_service)
 
         # First get the original message details
-        original_message, _ = gmail_service.get_email_by_id_with_attachments(
-            email_id=original_message_id
-        )
+        original_message, _ = gmail_service.get_email_by_id_with_attachments(email_id=original_message_id)
         if not original_message:
             if ctx:
-                await ctx.warning(
-                    f"Original message with ID {original_message_id} not found for user {user_id}"
-                )
+                await ctx.warning(f"Original message with ID {original_message_id} not found for user {user_id}")
             return [
                 TextContent(
                     type="text",
@@ -293,26 +250,16 @@ async def create_gmail_reply(
             ]
 
         # Create the reply
-        result = gmail_service.create_reply(
-            original_message=original_message, reply_body=reply_body, send=send, cc=cc
-        )
+        result = gmail_service.create_reply(original_message=original_message, reply_body=reply_body, send=send, cc=cc)
 
         if not result:
             if ctx:
-                await ctx.error(
-                    f"Failed to {'send' if send else 'draft'} reply to message {original_message_id}"
-                )
-            return [
-                TextContent(
-                    type="text", text=f"Failed to {'send' if send else 'draft'} reply."
-                )
-            ]
+                await ctx.error(f"Failed to {'send' if send else 'draft'} reply to message {original_message_id}")
+            return [TextContent(type="text", text=f"Failed to {'send' if send else 'draft'} reply.")]
 
         if ctx:
             action = "sent" if send else "created draft"
-            await ctx.info(
-                f"Successfully {action} reply to message ID: {original_message_id}"
-            )
+            await ctx.info(f"Successfully {action} reply to message ID: {original_message_id}")
         return [TextContent(type="text", text=json.dumps(result, indent=2))]
     except Exception as e:
         logger.error(f"Error in create_gmail_reply for {user_id}: {e}", exc_info=True)
@@ -324,34 +271,22 @@ async def create_gmail_reply(
 
 async def get_gmail_attachment(
     user_id: Annotated[str, get_user_id_description()],
-    message_id: Annotated[
-        str, "The ID of the Gmail message containing the attachment."
-    ],
+    message_id: Annotated[str, "The ID of the Gmail message containing the attachment."],
     attachment_id: Annotated[str, "The ID of the attachment to retrieve."],
     ctx: Context | None = None,
 ) -> list[TextContent]:
     """Retrieves an attachment from a Gmail message."""
     try:
         if ctx:
-            await ctx.info(
-                f"Retrieving attachment ID {attachment_id} from message ID {message_id} for user {user_id}"
-            )
+            await ctx.info(f"Retrieving attachment ID {attachment_id} from message ID {message_id} for user {user_id}")
         g_service = auth_helper.get_gmail_service(user_id)
         gmail_service = gmail_impl.GmailService(g_service)
-        attachment_data = gmail_service.get_attachment(
-            message_id=message_id, attachment_id=attachment_id
-        )
+        attachment_data = gmail_service.get_attachment(message_id=message_id, attachment_id=attachment_id)
 
         if not attachment_data:
             if ctx:
-                await ctx.warning(
-                    f"Attachment ID {attachment_id} not found in message {message_id}"
-                )
-            return [
-                TextContent(
-                    type="text", text=f"Attachment ID {attachment_id} not found."
-                )
-            ]
+                await ctx.warning(f"Attachment ID {attachment_id} not found in message {message_id}")
+            return [TextContent(type="text", text=f"Attachment ID {attachment_id} not found.")]
 
         return [TextContent(type="text", text=json.dumps(attachment_data, indent=2))]
     except Exception as e:
@@ -383,9 +318,7 @@ async def bulk_save_gmail_attachments(
         for attachment_info in attachments:
             try:
                 if ctx:
-                    await ctx.debug(
-                        f"Processing attachment for message ID {attachment_info.get('message_id')}"
-                    )
+                    await ctx.debug(f"Processing attachment for message ID {attachment_info.get('message_id')}")
 
                 # Validate required fields
                 message_id = attachment_info.get("message_id")
@@ -400,9 +333,7 @@ async def bulk_save_gmail_attachments(
                     continue
 
                 # Get the attachment data
-                attachment_data = gmail_service.get_attachment(
-                    message_id, attachment_id
-                )
+                attachment_data = gmail_service.get_attachment(message_id, attachment_id)
                 if not attachment_data:
                     error_msg = f"Failed to retrieve attachment {attachment_id} from message {message_id}"
                     if ctx:
@@ -430,9 +361,7 @@ async def bulk_save_gmail_attachments(
         return results
 
     except Exception as e:
-        logger.error(
-            f"Error in bulk_save_gmail_attachments for {user_id}: {e}", exc_info=True
-        )
+        logger.error(f"Error in bulk_save_gmail_attachments for {user_id}: {e}", exc_info=True)
         error_msg = f"Error processing attachments: {e}"
         if ctx:
             await ctx.error(error_msg)

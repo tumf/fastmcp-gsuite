@@ -20,9 +20,7 @@ def pytest_configure(config):
 
 def pytest_addoption(parser):
     """Add e2e command line option"""
-    parser.addoption(
-        "--run-e2e", action="store_true", default=False, help="Run e2e tests"
-    )
+    parser.addoption("--run-e2e", action="store_true", default=False, help="Run e2e tests")
 
 
 def pytest_collection_modifyitems(config, items):
@@ -51,9 +49,7 @@ def check_env_vars():
     missing_vars = [var for var in required_vars if not os.environ.get(var)]
 
     if missing_vars:
-        pytest.skip(
-            f"Missing required environment variables for e2e tests: {', '.join(missing_vars)}"
-        )
+        pytest.skip(f"Missing required environment variables for e2e tests: {', '.join(missing_vars)}")
 
 
 @pytest.fixture(scope="session")
@@ -72,9 +68,7 @@ def oauth_token(check_env_vars) -> Generator[dict[str, Any], None, None]:
     try:
         # Base64 decode if needed
         try:
-            credentials_json_decoded = base64.b64decode(credentials_json_str).decode(
-                "utf-8"
-            )
+            credentials_json_decoded = base64.b64decode(credentials_json_str).decode("utf-8")
             decoded_credentials = json.loads(credentials_json_decoded)
         except Exception:
             # Try direct JSON parsing if not base64 encoded
@@ -82,9 +76,7 @@ def oauth_token(check_env_vars) -> Generator[dict[str, Any], None, None]:
 
         # Create credentials object
         credentials = Credentials(
-            token=decoded_credentials.get(
-                "token", decoded_credentials.get("access_token")
-            ),
+            token=decoded_credentials.get("token", decoded_credentials.get("access_token")),
             refresh_token=decoded_credentials.get("refresh_token"),
             token_uri="https://oauth2.googleapis.com/token",
             client_id=google_client_id,
@@ -245,9 +237,7 @@ async def retry_async(
                 break
 
             # Log the error and retry info
-            print(
-                f"Attempt {attempt} failed: {e!s}. Retrying in {backoff:.1f} seconds..."
-            )
+            print(f"Attempt {attempt} failed: {e!s}. Retrying in {backoff:.1f} seconds...")
 
             # Wait before retrying
             await asyncio.sleep(backoff)
@@ -256,8 +246,6 @@ async def retry_async(
             backoff *= backoff_factor
 
     # If we get here, all attempts failed
-    assert (
-        last_exception is not None
-    )  # mypy に last_exception が None でないことを教える
+    assert last_exception is not None  # mypy に last_exception が None でないことを教える
     print(f"All {max_attempts} attempts failed. Last error: {last_exception!s}")
     raise last_exception

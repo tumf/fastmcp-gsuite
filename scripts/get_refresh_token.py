@@ -10,9 +10,7 @@ import urllib.parse
 # Use core google-auth components
 from google_auth_oauthlib.flow import Flow  # Use base Flow for exchange
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 # --- Configuration ---
 # Use full scopes again, as minimal didn't help
@@ -25,9 +23,7 @@ SCOPES = [
 
 # Get required environment variables directly, without dotenv
 USER_ID = os.environ.get("GOOGLE_ACCOUNT_EMAIL")  # The email to authorize
-CREDENTIALS_DIR = os.environ.get(
-    "CREDENTIALS_DIR", "./credentials"
-)  # Default to ./credentials if not set
+CREDENTIALS_DIR = os.environ.get("CREDENTIALS_DIR", "./credentials")  # Default to ./credentials if not set
 
 # Redirect URI for Out-Of-Band (manual copy/paste) flow
 REDIRECT_URI_OOB = "urn:ietf:wg:oauth:2.0:oob"
@@ -43,9 +39,7 @@ def get_refresh_token_manual_url(client_secret_file):
         return
     if not USER_ID:
         logging.error("Missing GOOGLE_ACCOUNT_EMAIL environment variable")
-        print(
-            "Please set the GOOGLE_ACCOUNT_EMAIL environment variable with your Google email address"
-        )
+        print("Please set the GOOGLE_ACCOUNT_EMAIL environment variable with your Google email address")
         print("Example: export GOOGLE_ACCOUNT_EMAIL=your.email@gmail.com")
         sys.exit(1)
 
@@ -62,15 +56,11 @@ def get_refresh_token_manual_url(client_secret_file):
             client_id = client_config_data["installed"].get("client_id")
             auth_uri = client_config_data["installed"].get("auth_uri")
             if not client_id or not auth_uri:
-                logging.error(
-                    "Could not find client_id or auth_uri in client secrets file."
-                )
+                logging.error("Could not find client_id or auth_uri in client secrets file.")
                 return
 
     except Exception as e:
-        logging.error(
-            f"Failed to load or parse client secrets file ({client_secret_file}): {e}"
-        )
+        logging.error(f"Failed to load or parse client secrets file ({client_secret_file}): {e}")
         return
 
     # --- Step 1: Manually construct the Authorization URL ---
@@ -109,9 +99,7 @@ def get_refresh_token_manual_url(client_secret_file):
         logging.info("Successfully exchanged code for tokens.")
 
         if not credentials.refresh_token:
-            logging.warning(
-                "NO REFRESH TOKEN obtained. Check settings or previous grants."
-            )
+            logging.warning("NO REFRESH TOKEN obtained. Check settings or previous grants.")
 
         # --- Step 3: Save the credentials ---
         # The credentials object from google-auth is slightly different
@@ -135,9 +123,7 @@ def get_refresh_token_manual_url(client_secret_file):
             "_module": "oauth2client.client",  # Pretend to be oauth2client
             "_class": "OAuth2Credentials",  # Pretend to be oauth2client
             "access_token": credentials.token,
-            "token_expiry": (
-                credentials.expiry.isoformat() if credentials.expiry else None
-            ),
+            "token_expiry": (credentials.expiry.isoformat() if credentials.expiry else None),
             # google-auth might have other fields like id_token, token_uri
         }
 
@@ -146,9 +132,7 @@ def get_refresh_token_manual_url(client_secret_file):
         credential_filename = os.path.join(CREDENTIALS_DIR, f".oauth2.{USER_ID}.json")
         with open(credential_filename, "w") as f:
             json.dump(credential_data_oauth2client_like, f, indent=2)
-        logging.info(
-            f"Credentials saved in potentially compatible format to: {credential_filename}"
-        )
+        logging.info(f"Credentials saved in potentially compatible format to: {credential_filename}")
         if credentials.refresh_token:
             logging.info("Refresh token was obtained.")
         else:
@@ -157,9 +141,7 @@ def get_refresh_token_manual_url(client_secret_file):
         # --- Step 4: Generate environment variables for the user ---
         # Base64 encode credentials data for secure storage in environment variables
         credentials_json_str = json.dumps(credential_data_oauth2client_like)
-        credentials_base64 = base64.b64encode(
-            credentials_json_str.encode("utf-8")
-        ).decode("utf-8")
+        credentials_base64 = base64.b64encode(credentials_json_str.encode("utf-8")).decode("utf-8")
 
         # Display only GSUITE_CREDENTIALS_JSON with double quotes
         print("\n" + "=" * 80)
@@ -167,33 +149,23 @@ def get_refresh_token_manual_url(client_secret_file):
         print("=" * 80)
         print(f'GSUITE_CREDENTIALS_JSON="{credentials_base64}"')
         print("=" * 80)
-        print(
-            "\nSet the environment variable in your testing environment using your preferred method."
-        )
-        print(
-            "Make sure the following environment variables are available during test execution:"
-        )
+        print("\nSet the environment variable in your testing environment using your preferred method.")
+        print("Make sure the following environment variables are available during test execution:")
         print("- GSUITE_CREDENTIALS_JSON (shown above)")
         print("- GOOGLE_ACCOUNT_EMAIL")
         print("- GOOGLE_PROJECT_ID")
         print("- GOOGLE_CLIENT_ID")
         print("- GOOGLE_CLIENT_SECRET")
-        print(
-            "\nFor example, when running E2E tests, ensure these variables are properly set"
-        )
+        print("\nFor example, when running E2E tests, ensure these variables are properly set")
         print("according to your chosen environment configuration method.")
         print("=" * 80)
 
     except Exception as e:
-        logging.error(
-            f"An error occurred during code exchange or saving: {e}", exc_info=True
-        )
+        logging.error(f"An error occurred during code exchange or saving: {e}", exc_info=True)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Generate OAuth2 credentials for Google APIs"
-    )
+    parser = argparse.ArgumentParser(description="Generate OAuth2 credentials for Google APIs")
     parser.add_argument(
         "--client-secret",
         "-c",

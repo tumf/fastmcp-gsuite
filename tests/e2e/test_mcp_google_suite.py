@@ -6,20 +6,15 @@ import shutil
 from datetime import datetime, timedelta
 
 import pytest
-from chuk_mcp.mcp_client.messages.initialize.send_messages import \
-    send_initialize
-from chuk_mcp.mcp_client.messages.tools.send_messages import (send_tools_call,
-                                                              send_tools_list)
+from chuk_mcp.mcp_client.messages.initialize.send_messages import send_initialize
+from chuk_mcp.mcp_client.messages.tools.send_messages import send_tools_call, send_tools_list
 from chuk_mcp.mcp_client.transport.stdio.stdio_client import stdio_client
-from chuk_mcp.mcp_client.transport.stdio.stdio_server_parameters import \
-    StdioServerParameters
+from chuk_mcp.mcp_client.transport.stdio.stdio_server_parameters import StdioServerParameters
 
 from tests.e2e.conftest import retry_async
 
 # Enable debug logging
-logging.basicConfig(
-    level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 # Get the path of uv from environment variable or search in PATH
@@ -47,18 +42,14 @@ def credentials():
     google_client_secret = os.environ.get("GOOGLE_CLIENT_SECRET")
 
     # Ensure that authentication information is set
-    assert (
-        credentials_json_str
-    ), "GSUITE_CREDENTIALS_JSON environment variable is not set"
+    assert credentials_json_str, "GSUITE_CREDENTIALS_JSON environment variable is not set"
     assert google_email, "GOOGLE_ACCOUNT_EMAIL environment variable is not set"
     assert google_client_id, "GOOGLE_CLIENT_ID environment variable is not set"
     assert google_client_secret, "GOOGLE_CLIENT_SECRET environment variable is not set"
 
     try:
         # Base64 decode
-        credentials_json_decoded = base64.b64decode(credentials_json_str).decode(
-            "utf-8"
-        )
+        credentials_json_decoded = base64.b64decode(credentials_json_str).decode("utf-8")
         decoded_credentials = json.loads(credentials_json_decoded)
 
         # Required fields for OAuth2Credentials
@@ -68,9 +59,7 @@ def credentials():
             "client_secret": google_client_secret,
             "refresh_token": decoded_credentials.get("refresh_token", ""),
             "token_expiry": decoded_credentials.get("token_expiry", ""),
-            "token_uri": decoded_credentials.get(
-                "token_uri", "https://oauth2.googleapis.com/token"
-            ),
+            "token_uri": decoded_credentials.get("token_uri", "https://oauth2.googleapis.com/token"),
             "user_agent": "fastmcp-gsuite-e2e-tests",
             "revoke_uri": "https://oauth2.googleapis.com/revoke",
             "id_token": None,
@@ -149,9 +138,7 @@ class TestMCPGoogleSuite:
         )
 
         # Set up server parameters using StdioServerParameters
-        server_params = StdioServerParameters(
-            command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env
-        )
+        server_params = StdioServerParameters(command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env)
 
         # Define helper functions to be used with retry logic
         async def initialize_mcp(read_stream, write_stream):
@@ -186,11 +173,7 @@ class TestMCPGoogleSuite:
             )
 
             # Check if Gmail-related tools are included
-            gmail_tools = [
-                tool
-                for tool in tools_response["tools"]
-                if "gmail" in tool["name"].lower()
-            ]
+            gmail_tools = [tool for tool in tools_response["tools"] if "gmail" in tool["name"].lower()]
             assert len(gmail_tools) > 0, "No Gmail-related tools found"
 
             # Output tool names
@@ -210,9 +193,7 @@ class TestMCPGoogleSuite:
         )
 
         # Set up server parameters using StdioServerParameters
-        server_params = StdioServerParameters(
-            command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env
-        )
+        server_params = StdioServerParameters(command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env)
 
         # Define helper functions to be used with retry logic
         async def initialize_mcp(read_stream, write_stream):
@@ -234,9 +215,7 @@ class TestMCPGoogleSuite:
             )
 
             assert result is not None, "Tool call returned None"
-            assert not result.get(
-                "isError", False
-            ), f"Tool call returned error: {result}"
+            assert not result.get("isError", False), f"Tool call returned error: {result}"
             assert "content" in result, f"No content field in response: {result}"
             assert len(result["content"]) > 0, f"Empty content in response: {result}"
             return result
@@ -305,9 +284,7 @@ class TestMCPGoogleSuite:
                     response_text = item.get("text")
                     # Check for error messages in the response
                     if "error" in response_text.lower():
-                        print(
-                            f"Warning: Error in draft creation response: {response_text}"
-                        )
+                        print(f"Warning: Error in draft creation response: {response_text}")
                         pytest.skip(f"Draft creation failed: {response_text}")
 
                     try:
@@ -372,9 +349,7 @@ class TestMCPGoogleSuite:
         )
 
         # Set up server parameters using StdioServerParameters
-        server_params = StdioServerParameters(
-            command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env
-        )
+        server_params = StdioServerParameters(command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env)
 
         # Connect to the server
         async with stdio_client(server_params) as (read_stream, write_stream):
@@ -386,11 +361,7 @@ class TestMCPGoogleSuite:
             tools_response = await send_tools_list(read_stream, write_stream)
 
             # Check if Calendar-related tools are included
-            calendar_tools = [
-                tool
-                for tool in tools_response["tools"]
-                if "calendar" in tool["name"].lower()
-            ]
+            calendar_tools = [tool for tool in tools_response["tools"] if "calendar" in tool["name"].lower()]
             assert len(calendar_tools) > 0, "No Calendar-related tools found"
 
             # Output tool names
@@ -410,9 +381,7 @@ class TestMCPGoogleSuite:
         )
 
         # Set up server parameters using StdioServerParameters
-        server_params = StdioServerParameters(
-            command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env
-        )
+        server_params = StdioServerParameters(command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env)
 
         # Connect to the server
         async with stdio_client(server_params) as (read_stream, write_stream):
@@ -505,9 +474,7 @@ class TestMCPGoogleSuite:
         )
 
         # Set up server parameters using StdioServerParameters
-        server_params = StdioServerParameters(
-            command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env
-        )
+        server_params = StdioServerParameters(command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env)
 
         # Connect to the server
         async with stdio_client(server_params) as (read_stream, write_stream):
@@ -553,9 +520,7 @@ class TestMCPGoogleSuite:
 
                 # Verify that message data was returned in the correct format
                 assert "email" in message_data, "Email data was not returned"
-                assert (
-                    "attachments" in message_data
-                ), "Attachment information was not returned"
+                assert "attachments" in message_data, "Attachment information was not returned"
 
     @pytest.mark.e2e
     async def test_gmail_labels(self, credentials):
@@ -570,9 +535,7 @@ class TestMCPGoogleSuite:
         )
 
         # Set up server parameters using StdioServerParameters
-        server_params = StdioServerParameters(
-            command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env
-        )
+        server_params = StdioServerParameters(command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env)
 
         # Connect to the server
         async with stdio_client(server_params) as (read_stream, write_stream):
@@ -612,9 +575,7 @@ class TestMCPGoogleSuite:
         )
 
         # Set up server parameters using StdioServerParameters
-        server_params = StdioServerParameters(
-            command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env
-        )
+        server_params = StdioServerParameters(command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env)
 
         # Connect to the server
         async with stdio_client(server_params) as (read_stream, write_stream):

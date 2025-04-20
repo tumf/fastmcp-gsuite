@@ -62,9 +62,7 @@ async def get_drive_file(
 
         if not file:
             if ctx:
-                await ctx.warning(
-                    f"File with ID {file_id} not found for user {user_id}"
-                )
+                await ctx.warning(f"File with ID {file_id} not found for user {user_id}")
             return [TextContent(type="text", text=f"File with ID {file_id} not found.")]
 
         return [TextContent(type="text", text=json.dumps(file, indent=2))]
@@ -91,14 +89,8 @@ async def download_drive_file(
 
         if not file_data:
             if ctx:
-                await ctx.warning(
-                    f"File with ID {file_id} could not be downloaded for user {user_id}"
-                )
-            return [
-                TextContent(
-                    type="text", text=f"File with ID {file_id} could not be downloaded."
-                )
-            ]
+                await ctx.warning(f"File with ID {file_id} could not be downloaded for user {user_id}")
+            return [TextContent(type="text", text=f"File with ID {file_id} could not be downloaded.")]
 
         return [
             TextContent(

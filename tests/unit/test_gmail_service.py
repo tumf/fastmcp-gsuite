@@ -177,11 +177,7 @@ class TestGmailService(unittest.TestCase):
                 {"mimeType": "text/plain", "body": {"data": encoded_body}},
                 {
                     "mimeType": "text/html",
-                    "body": {
-                        "data": base64.urlsafe_b64encode(
-                            b"<p>HTML version</p>"
-                        ).decode()
-                    },
+                    "body": {"data": base64.urlsafe_b64encode(b"<p>HTML version</p>").decode()},
                 },
             ],
         }
@@ -240,9 +236,7 @@ class TestGmailService(unittest.TestCase):
         self.assertEqual(emails[1]["subject"], "Subject 2")
 
         # Verify API calls
-        self.mock_messages.list.assert_called_once_with(
-            userId="me", maxResults=10, q="is:unread"
-        )
+        self.mock_messages.list.assert_called_once_with(userId="me", maxResults=10, q="is:unread")
 
         # Verify that get was called for each message
         self.assertEqual(self.mock_messages.get.call_count, 2)

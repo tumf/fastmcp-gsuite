@@ -118,12 +118,7 @@ class GmailService:
 
                 # If still no body found, try the first part as fallback
                 # Check if 'body' and 'data' exist before accessing
-                if (
-                    parts
-                    and "body" in parts[0]
-                    and parts[0]["body"]
-                    and "data" in parts[0]["body"]
-                ):
+                if parts and "body" in parts[0] and parts[0]["body"] and "data" in parts[0]["body"]:
                     data = parts[0]["body"]["data"]
                     return base64.urlsafe_b64decode(data).decode("utf-8")
 
@@ -174,12 +169,7 @@ class GmailService:
 
             # Fetch full message details for each message
             for msg in messages:
-                txt = (
-                    self.service.users()
-                    .messages()
-                    .get(userId="me", id=msg["id"])
-                    .execute()
-                )
+                txt = self.service.users().messages().get(userId="me", id=msg["id"]).execute()
                 parsed_message = self._parse_message(txt=txt, parse_body=False)
                 if parsed_message:
                     parsed.append(parsed_message)
@@ -191,9 +181,7 @@ class GmailService:
             logging.error(traceback.format_exc())
             return []
 
-    def get_email_by_id_with_attachments(
-        self, email_id: str
-    ) -> tuple[dict, dict] | tuple[None, dict]:
+    def get_email_by_id_with_attachments(self, email_id: str) -> tuple[dict, dict] | tuple[None, dict]:
         """
         Fetch and parse a complete email message by its ID including attachment IDs.
 
@@ -206,9 +194,7 @@ class GmailService:
         """
         try:
             # Fetch the complete message by ID
-            message = (
-                self.service.users().messages().get(userId="me", id=email_id).execute()
-            )
+            message = self.service.users().messages().get(userId="me", id=email_id).execute()
 
             # Parse the message with body included
             parsed_email = self._parse_message(txt=message, parse_body=True)
@@ -232,9 +218,7 @@ class GmailService:
                         attachments[part_id] = attachment
             else:
                 # Handle case when there are no parts (single part message)
-                logging.info(
-                    f"Email {email_id} does not have 'parts' in payload (likely single part message)"
-                )
+                logging.info(f"Email {email_id} does not have 'parts' in payload (likely single part message)")
                 if (
                     "payload" in message
                     and "body" in message["payload"]
@@ -244,9 +228,7 @@ class GmailService:
                     attachment_id = message["payload"]["body"]["attachmentId"]
                     attachment = {
                         "filename": message["payload"].get("filename", "attachment"),
-                        "mimeType": message["payload"].get(
-                            "mimeType", "application/octet-stream"
-                        ),
+                        "mimeType": message["payload"].get("mimeType", "application/octet-stream"),
                         "attachmentId": attachment_id,
                         "partId": "0",
                     }
@@ -259,9 +241,7 @@ class GmailService:
             logging.error(traceback.format_exc())
             return None, {}
 
-    def create_draft(
-        self, to: str, subject: str, body: str, cc: list[str] | None = None
-    ) -> dict | None:
+    def create_draft(self, to: str, subject: str, body: str, cc: list[str] | None = None) -> dict | None:
         """
         Create a draft email message.
 
@@ -293,17 +273,10 @@ class GmailService:
                 mime_message["cc"] = ",".join(cc)
 
             # Encode the message
-            raw_message = base64.urlsafe_b64encode(mime_message.as_bytes()).decode(
-                "utf-8"
-            )
+            raw_message = base64.urlsafe_b64encode(mime_message.as_bytes()).decode("utf-8")
 
             # Create the draft
-            draft = (
-                self.service.users()
-                .drafts()
-                .create(userId="me", body={"message": {"raw": raw_message}})
-                .execute()
-            )
+            draft = self.service.users().drafts().create(userId="me", body={"message": {"raw": raw_message}}).execute()
 
             return draft
 
@@ -364,11 +337,7 @@ class GmailService:
             original_from = original_message.get("from", "")
             original_body = original_message.get("body", "")
 
-            original_body_quoted = (
-                original_body.replace("\n", "\n> ")
-                if original_body
-                else "[No message body]"
-            )
+            original_body_quoted = original_body.replace("\n", "\n> ") if original_body else "[No message body]"
             full_reply_body = f"{reply_body}\n\nOn {original_date}, {original_from} wrote:\n> {original_body_quoted}"
 
             mime_message = MIMEText(full_reply_body)
@@ -380,33 +349,19 @@ class GmailService:
             mime_message["In-Reply-To"] = original_message.get("id", "")
             mime_message["References"] = original_message.get("id", "")
 
-            raw_message = base64.urlsafe_b64encode(mime_message.as_bytes()).decode(
-                "utf-8"
-            )
+            raw_message = base64.urlsafe_b64encode(mime_message.as_bytes()).decode("utf-8")
 
             message_body = {
                 "raw": raw_message,
-                "threadId": original_message.get(
-                    "threadId"
-                ),  # Ensure it's added to the same thread
+                "threadId": original_message.get("threadId"),  # Ensure it's added to the same thread
             }
 
             if send:
                 # Send the reply immediately
-                result = (
-                    self.service.users()
-                    .messages()
-                    .send(userId="me", body=message_body)
-                    .execute()
-                )
+                result = self.service.users().messages().send(userId="me", body=message_body).execute()
             else:
                 # Save as draft
-                result = (
-                    self.service.users()
-                    .drafts()
-                    .create(userId="me", body={"message": message_body})
-                    .execute()
-                )
+                result = self.service.users().drafts().create(userId="me", body={"message": message_body}).execute()
 
             return result
 
@@ -438,8 +393,6 @@ class GmailService:
             return {"size": attachment.get("size"), "data": attachment.get("data")}
 
         except Exception as e:
-            logging.error(
-                f"Error retrieving attachment {attachment_id} from message {message_id}: {e!s}"
-            )
+            logging.error(f"Error retrieving attachment {attachment_id} from message {message_id}: {e!s}")
             logging.error(traceback.format_exc())
             return None

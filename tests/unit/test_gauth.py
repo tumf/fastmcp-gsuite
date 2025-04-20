@@ -3,11 +3,17 @@ from unittest.mock import MagicMock, mock_open, patch
 
 from oauth2client.client import FlowExchangeError, OAuth2Credentials
 
-from src.mcp_gsuite.gauth import (AccountInfo, CodeExchangeError,
-                                  NoUserIdError, exchange_code,
-                                  get_account_info, get_authorization_url,
-                                  get_stored_credentials, get_user_info,
-                                  store_credentials)
+from src.mcp_gsuite.gauth import (
+    AccountInfo,
+    CodeExchangeError,
+    NoUserIdError,
+    exchange_code,
+    get_account_info,
+    get_authorization_url,
+    get_stored_credentials,
+    get_user_info,
+    store_credentials,
+)
 
 
 class TestGAuth(unittest.TestCase):
@@ -61,9 +67,7 @@ class TestGAuth(unittest.TestCase):
         mock_exists.return_value = True
 
         # Call the function with a user ID
-        with patch(
-            "src.mcp_gsuite.gauth.Credentials.new_from_json"
-        ) as mock_new_from_json:
+        with patch("src.mcp_gsuite.gauth.Credentials.new_from_json") as mock_new_from_json:
             mock_new_from_json.return_value = self.mock_credentials
             result = get_stored_credentials("test@example.com")
 
@@ -71,9 +75,7 @@ class TestGAuth(unittest.TestCase):
         self.assertEqual(result, self.mock_credentials)
 
         # Verify the correct file was opened
-        mock_file.assert_called_once_with(
-            "/path/to/creds/.oauth2.test@example.com.json"
-        )
+        mock_file.assert_called_once_with("/path/to/creds/.oauth2.test@example.com.json")
 
     @patch("src.mcp_gsuite.gauth.settings")
     @patch("os.path.exists")
@@ -102,15 +104,11 @@ class TestGAuth(unittest.TestCase):
         mock_makedirs.assert_called_once_with("/path/to/creds", exist_ok=True)
 
         # Verify file was written with the correct content
-        mock_file.assert_called_once_with(
-            "/path/to/creds/.oauth2.test@example.com.json", "w"
-        )
+        mock_file.assert_called_once_with("/path/to/creds/.oauth2.test@example.com.json", "w")
         mock_file().write.assert_called_once_with('{"token": "mock_token"}')
 
     @patch("src.mcp_gsuite.gauth.flow_from_clientsecrets")
-    @patch(
-        "src.mcp_gsuite.gauth.CLIENTSECRETS_LOCATION", "/path/to/client_secrets.json"
-    )
+    @patch("src.mcp_gsuite.gauth.CLIENTSECRETS_LOCATION", "/path/to/client_secrets.json")
     @patch("src.mcp_gsuite.gauth.SCOPES", ["scope1", "scope2"])
     @patch("src.mcp_gsuite.gauth.REDIRECT_URI", "http://localhost:4100/code")
     def test_exchange_code_success(self, mock_flow_from_clientsecrets):
@@ -126,16 +124,12 @@ class TestGAuth(unittest.TestCase):
         self.assertEqual(result, self.mock_credentials)
 
         # Verify flow was created correctly
-        mock_flow_from_clientsecrets.assert_called_once_with(
-            "/path/to/client_secrets.json", "scope1 scope2"
-        )
+        mock_flow_from_clientsecrets.assert_called_once_with("/path/to/client_secrets.json", "scope1 scope2")
         self.assertEqual(mock_flow.redirect_uri, "http://localhost:4100/code")
         mock_flow.step2_exchange.assert_called_once_with("authorization_code")
 
     @patch("src.mcp_gsuite.gauth.flow_from_clientsecrets")
-    @patch(
-        "src.mcp_gsuite.gauth.CLIENTSECRETS_LOCATION", "/path/to/client_secrets.json"
-    )
+    @patch("src.mcp_gsuite.gauth.CLIENTSECRETS_LOCATION", "/path/to/client_secrets.json")
     @patch("src.mcp_gsuite.gauth.SCOPES", ["scope1", "scope2"])
     @patch("src.mcp_gsuite.gauth.REDIRECT_URI", "http://localhost:4100/code")
     def test_exchange_code_failure(self, mock_flow_from_clientsecrets):
@@ -192,9 +186,7 @@ class TestGAuth(unittest.TestCase):
             get_user_info(self.mock_credentials)
 
     @patch("src.mcp_gsuite.gauth.flow_from_clientsecrets")
-    @patch(
-        "src.mcp_gsuite.gauth.CLIENTSECRETS_LOCATION", "/path/to/client_secrets.json"
-    )
+    @patch("src.mcp_gsuite.gauth.CLIENTSECRETS_LOCATION", "/path/to/client_secrets.json")
     @patch("src.mcp_gsuite.gauth.SCOPES", ["scope1", "scope2"])
     @patch("src.mcp_gsuite.gauth.REDIRECT_URI", "http://localhost:4100/code")
     def test_get_authorization_url(self, mock_flow_from_clientsecrets):
@@ -221,9 +213,7 @@ class TestGAuth(unittest.TestCase):
 
     def test_account_info(self):
         # Create an AccountInfo instance
-        account = AccountInfo(
-            email="test@example.com", account_type="personal", extra_info="Test account"
-        )
+        account = AccountInfo(email="test@example.com", account_type="personal", extra_info="Test account")
 
         # Verify properties
         self.assertEqual(account.email, "test@example.com")

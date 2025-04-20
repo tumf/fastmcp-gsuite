@@ -38,15 +38,9 @@ async def list_calendars(
 
 async def list_calendar_events(
     user_id: Annotated[str, get_user_id_description()],
-    calendar_id: Annotated[
-        str, "The ID of the calendar to query (use 'primary' for the primary calendar)."
-    ],
-    start_time: Annotated[
-        str, "Start time in ISO 8601 format (e.g., '2024-04-15T00:00:00Z')."
-    ],
-    end_time: Annotated[
-        str, "End time in ISO 8601 format (e.g., '2024-04-16T00:00:00Z')."
-    ],
+    calendar_id: Annotated[str, "The ID of the calendar to query (use 'primary' for the primary calendar)."],
+    start_time: Annotated[str, "Start time in ISO 8601 format (e.g., '2024-04-15T00:00:00Z')."],
+    end_time: Annotated[str, "End time in ISO 8601 format (e.g., '2024-04-16T00:00:00Z')."],
     max_results: Annotated[int, "Maximum number of events (1-2500, default 100)"] = 100,
     query: Annotated[str | None, "Optional text query to filter events."] = None,
     ctx: Context | None = None,
@@ -54,9 +48,7 @@ async def list_calendar_events(
     """Lists events from a specified calendar and time range."""
     try:
         if ctx:
-            await ctx.info(
-                f"Listing events for {user_id} in calendar {calendar_id} from {start_time} to {end_time}"
-            )
+            await ctx.info(f"Listing events for {user_id} in calendar {calendar_id} from {start_time} to {end_time}")
         c_service = auth_helper.get_calendar_service(user_id)
         calendar_service = calendar_impl.CalendarService(c_service)
         events = calendar_service.list_events(
@@ -68,12 +60,8 @@ async def list_calendar_events(
         )
         if not events:
             if ctx:
-                await ctx.info(
-                    f"No events found for the specified criteria for user {user_id}"
-                )
-            return [
-                TextContent(type="text", text="No events found matching the criteria.")
-            ]
+                await ctx.info(f"No events found for the specified criteria for user {user_id}")
+            return [TextContent(type="text", text="No events found matching the criteria.")]
         return [TextContent(type="text", text=json.dumps(events, indent=2))]
     except Exception as e:
         logger.error(f"Error in list_calendar_events for {user_id}: {e}", exc_info=True)
@@ -98,21 +86,15 @@ async def create_calendar_event(
         str,
         "End date/time in ISO 8601 format (e.g., '2024-04-15T11:00:00Z' or '2024-04-16' for all-day).",
     ],
-    description: Annotated[
-        str | None, "Optional description or details for the event."
-    ] = None,
+    description: Annotated[str | None, "Optional description or details for the event."] = None,
     location: Annotated[str | None, "Optional location for the event."] = None,
-    attendees: Annotated[
-        list[str] | None, "Optional list of attendee email addresses."
-    ] = None,
+    attendees: Annotated[list[str] | None, "Optional list of attendee email addresses."] = None,
     ctx: Context | None = None,
 ) -> list[TextContent]:
     """Creates a new calendar event."""
     try:
         if ctx:
-            await ctx.info(
-                f"Creating event '{summary}' for {user_id} in calendar {calendar_id}"
-            )
+            await ctx.info(f"Creating event '{summary}' for {user_id} in calendar {calendar_id}")
         c_service = auth_helper.get_calendar_service(user_id)
         calendar_service = calendar_impl.CalendarService(c_service)
 
@@ -134,18 +116,14 @@ async def create_calendar_event(
 
         if not created_event:
             if ctx:
-                await ctx.error(
-                    f"Failed to create event '{summary}' for user {user_id}"
-                )
+                await ctx.error(f"Failed to create event '{summary}' for user {user_id}")
             raise RuntimeError("Failed to create calendar event.")
 
         if ctx:
             await ctx.info(f"Successfully created event ID: {created_event.get('id')}")
         return [TextContent(type="text", text=json.dumps(created_event, indent=2))]
     except Exception as e:
-        logger.error(
-            f"Error in create_calendar_event for {user_id}: {e}", exc_info=True
-        )
+        logger.error(f"Error in create_calendar_event for {user_id}: {e}", exc_info=True)
         error_msg = f"Error creating calendar event: {e}"
         if ctx:
             await ctx.error(error_msg)
@@ -164,35 +142,21 @@ async def delete_calendar_event(
     """Deletes a calendar event."""
     try:
         if ctx:
-            await ctx.info(
-                f"Deleting event ID {event_id} for {user_id} from calendar {calendar_id}"
-            )
+            await ctx.info(f"Deleting event ID {event_id} for {user_id} from calendar {calendar_id}")
         c_service = auth_helper.get_calendar_service(user_id)
         calendar_service = calendar_impl.CalendarService(c_service)
-        success = calendar_service.delete_event(
-            event_id=event_id, calendar_id=calendar_id
-        )
+        success = calendar_service.delete_event(event_id=event_id, calendar_id=calendar_id)
 
         if success:
             if ctx:
                 await ctx.info(f"Successfully deleted event ID {event_id}")
-            return [
-                TextContent(
-                    type="text", text=f"Successfully deleted event ID: {event_id}"
-                )
-            ]
+            return [TextContent(type="text", text=f"Successfully deleted event ID: {event_id}")]
         else:
             if ctx:
-                await ctx.warning(
-                    f"Failed to delete event ID {event_id} for user {user_id}"
-                )
-            return [
-                TextContent(type="text", text=f"Failed to delete event ID: {event_id}")
-            ]
+                await ctx.warning(f"Failed to delete event ID {event_id} for user {user_id}")
+            return [TextContent(type="text", text=f"Failed to delete event ID: {event_id}")]
     except Exception as e:
-        logger.error(
-            f"Error in delete_calendar_event for {user_id}: {e}", exc_info=True
-        )
+        logger.error(f"Error in delete_calendar_event for {user_id}: {e}", exc_info=True)
         error_msg = f"Error deleting calendar event: {e}"
         if ctx:
             await ctx.error(error_msg)
