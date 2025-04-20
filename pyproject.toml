@@ -78,3 +78,22 @@ markers = [
 
 [tool.uv.sources]
 fastmcp-gsuite = { workspace = true }
+
+# Ruff設定
+[tool.ruff]
+# 基本設定
+line-length = 120
+target-version = "py313"
+select = ["E", "F", "I", "W", "N", "B", "UP", "RUF", "A"]
+ignore = []
+
+# isort互換の設定
+[tool.ruff.isort]
+known-first-party = ["mcp_gsuite"]
+
+# Black互換のフォーマット設定
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+skip-magic-trailing-comma = false
