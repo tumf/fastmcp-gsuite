@@ -1,13 +1,11 @@
 import logging
-from typing import Annotated, List
+from typing import Annotated
 
 from fastmcp import Context, FastMCP
 from mcp.types import TextContent
 
 # Logging configuration
-logging.basicConfig(
-    level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 # Create a simple MCP server
@@ -21,7 +19,7 @@ mcp = FastMCP(
 async def hello_world(
     name: Annotated[str, "Your name"],
     ctx: Context | None = None,
-) -> List[TextContent]:
+) -> list[TextContent]:
     """A simple test tool that returns a greeting."""
     logger.debug(f"hello_world called with name: {name}")
     if ctx:

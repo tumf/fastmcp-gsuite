@@ -15,7 +15,7 @@ repos:
         name: Check for non-ASCII characters in code files
         entry: python -c "import sys, re; sys.exit(1 if any(re.search(r'[^\x00-\x7F]', open(f, 'r', encoding='utf-8').read()) for f in sys.argv[1:]) else 0)"
         language: python
-        types: [python]
+        types: [python, toml]
         exclude: "tests/.*|.*/test_.*\\.py"
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
