@@ -98,23 +98,21 @@ publish: build
 	uv run twine upload dist/*
 
 # Version bumping
-VERSION_FILE := src/mcp_gsuite/__version__.py
 PYPROJECT_FILE := pyproject.toml
 
 # Helper function to update version
 define update_version
 	@echo "Updating version to $(1)"
-	@sed -i.bak 's/__version__ = "[^"]*"/__version__ = "$(1)"/' $(VERSION_FILE)
 	@sed -i.bak 's/^version = "[^"]*"/version = "$(1)"/' $(PYPROJECT_FILE)
-	@rm -f $(VERSION_FILE).bak $(PYPROJECT_FILE).bak
-	@git add $(VERSION_FILE) $(PYPROJECT_FILE)
+	@rm -f $(PYPROJECT_FILE).bak
+	@git add $(PYPROJECT_FILE)
 	@git commit -m "Bump version to $(1)"
 	@git tag -a v$(1) -m "Version $(1)"
 	@echo "Version updated to $(1). Don't forget to push with: git push && git push --tags"
 endef
 
 # Get current version (macOS compatible)
-CURRENT_VERSION := $(shell grep -o '"[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*[^"]*"' $(VERSION_FILE) | tr -d '"')
+CURRENT_VERSION := $(shell grep -o 'version = "[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*[^"]*"' $(PYPROJECT_FILE) | sed 's/version = "\(.*\)"/\1/')
 VERSION_BASE := $(shell echo $(CURRENT_VERSION) | sed -E 's/([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
 VERSION_SUFFIX := $(shell echo $(CURRENT_VERSION) | grep -o -- "-[a-zA-Z0-9]\+" || echo "")
 MAJOR := $(shell echo $(VERSION_BASE) | cut -d. -f1)

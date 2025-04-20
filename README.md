@@ -226,14 +226,14 @@ This project is configured to automatically publish to PyPI when a tag is pushed
 
 To publish a new version:
 
-1. Update the version in `src/mcp_gsuite/__version__.py` and `pyproject.toml`
+1. Update the version in `pyproject.toml`
 2. Commit the changes
 3. Tag the commit with a version tag (e.g., `v0.4.2`)
 4. Push the tag to GitHub
 
 ```bash
 # Example workflow to release a new version
-git add src/mcp_gsuite/__version__.py pyproject.toml
+git add pyproject.toml
 git commit -m "Bump version to 0.4.2"
 git tag -a v0.4.2 -m "Version 0.4.2"
 git push && git push --tags
