@@ -35,6 +35,7 @@ SCOPES = [
     "https://www.googleapis.com/auth/userinfo.email",
     "https://mail.google.com/",
     "https://www.googleapis.com/auth/calendar",
+    "https://www.googleapis.com/auth/drive",
 ]
 
 
