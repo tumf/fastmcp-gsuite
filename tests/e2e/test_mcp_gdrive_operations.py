@@ -652,6 +652,7 @@ class TestMCPGDriveOperations:
             temp_dir = tempfile.mkdtemp()
             dummy_files = []
             file_count = 5  # Create 5 dummy files for testing
+            temp_placeholder = os.path.join(temp_dir, ".placeholder")
 
             for i in range(file_count):
                 file_path = os.path.join(temp_dir, f"dummy_file_{i}.txt")
