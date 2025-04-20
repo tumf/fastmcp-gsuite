@@ -2,9 +2,6 @@ import json
 import unittest
 from unittest.mock import MagicMock, patch
 
-from fastmcp import Context
-from mcp.types import TextContent
-
 from src.mcp_gsuite.gmail_tools import (
     bulk_get_gmail_emails,
     bulk_save_gmail_attachments,
@@ -25,14 +22,14 @@ class TestGmailTools(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures."""
         self.mock_gmail_service = MagicMock()
-        
+
         self.mock_context = MockContext()
-        
+
         self.test_user_id = "test@example.com"
         self.test_email_id = "test_email_123"
         self.test_draft_id = "test_draft_123"
         self.test_attachment_id = "test_attachment_123"
-        
+
         self.sample_email = {
             "id": self.test_email_id,
             "threadId": "thread123",
@@ -42,14 +39,14 @@ class TestGmailTools(unittest.TestCase):
             "date": "2023-01-01T12:00:00Z",
             "snippet": "This is a test email",
         }
-        
+
         self.sample_attachment = {
             "id": self.test_attachment_id,
             "filename": "test.pdf",
             "mimeType": "application/pdf",
             "size": 12345,
         }
-        
+
         self.sample_draft = {
             "id": self.test_draft_id,
             "message": {
@@ -66,23 +63,21 @@ class TestGmailTools(unittest.TestCase):
         mock_get_gmail_service.return_value = mock_service
         mock_gmail_service_instance = mock_gmail_service_class.return_value
         mock_gmail_service_instance.query_emails.return_value = [self.sample_email]
-        
+
         result = await query_gmail_emails(
             user_id=self.test_user_id,
             query="is:unread",
             max_results=10,
             ctx=self.mock_context,
         )
-        
+
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].type, "text")
         self.assertEqual(json.loads(result[0].text), self.sample_email)
-        
+
         mock_get_gmail_service.assert_called_once_with(self.test_user_id)
         mock_gmail_service_class.assert_called_once_with(mock_service)
-        mock_gmail_service_instance.query_emails.assert_called_once_with(
-            query="is:unread", max_results=10
-        )
+        mock_gmail_service_instance.query_emails.assert_called_once_with(query="is:unread", max_results=10)
 
     @patch("src.mcp_gsuite.gmail_tools.auth_helper.get_gmail_service")
     @patch("src.mcp_gsuite.gmail_tools.gmail_impl.GmailService")
@@ -92,23 +87,21 @@ class TestGmailTools(unittest.TestCase):
         mock_get_gmail_service.return_value = mock_service
         mock_gmail_service_instance = mock_gmail_service_class.return_value
         mock_gmail_service_instance.query_emails.return_value = []
-        
+
         result = await query_gmail_emails(
             user_id=self.test_user_id,
             query="is:unread",
             max_results=10,
             ctx=self.mock_context,
         )
-        
+
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].type, "text")
         self.assertEqual(result[0].text, "No emails found matching the query.")
-        
+
         mock_get_gmail_service.assert_called_once_with(self.test_user_id)
         mock_gmail_service_class.assert_called_once_with(mock_service)
-        mock_gmail_service_instance.query_emails.assert_called_once_with(
-            query="is:unread", max_results=10
-        )
+        mock_gmail_service_instance.query_emails.assert_called_once_with(query="is:unread", max_results=10)
 
     @patch("src.mcp_gsuite.gmail_tools.auth_helper.get_gmail_service")
     @patch("src.mcp_gsuite.gmail_tools.gmail_impl.GmailService")
@@ -121,13 +114,13 @@ class TestGmailTools(unittest.TestCase):
             self.sample_email,
             {"attachment1": self.sample_attachment},
         )
-        
+
         result = await get_email_details(
             user_id=self.test_user_id,
             email_id=self.test_email_id,
             ctx=self.mock_context,
         )
-        
+
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].type, "text")
         expected_result = {
@@ -135,13 +128,13 @@ class TestGmailTools(unittest.TestCase):
             "attachments": {"attachment1": self.sample_attachment},
         }
         self.assertEqual(json.loads(result[0].text), expected_result)
-        
+
         mock_get_gmail_service.assert_called_once_with(self.test_user_id)
         mock_gmail_service_class.assert_called_once_with(mock_service)
         mock_gmail_service_instance.get_email_by_id_with_attachments.assert_called_once_with(
             email_id=self.test_email_id
         )
-        
+
     @patch("src.mcp_gsuite.gmail_tools.auth_helper.get_gmail_service")
     @patch("src.mcp_gsuite.gmail_tools.gmail_impl.GmailService")
     async def test_get_gmail_labels_success(self, mock_gmail_service_class, mock_get_gmail_service):
@@ -149,18 +142,21 @@ class TestGmailTools(unittest.TestCase):
         mock_service = MagicMock()
         mock_get_gmail_service.return_value = mock_service
         mock_gmail_service_instance = mock_gmail_service_class.return_value
-        sample_labels = [{"id": "INBOX", "name": "INBOX"}, {"id": "SENT", "name": "SENT"}]
+        sample_labels = [
+            {"id": "INBOX", "name": "INBOX"},
+            {"id": "SENT", "name": "SENT"},
+        ]
         mock_gmail_service_instance.get_labels.return_value = sample_labels
-        
+
         result = await get_gmail_labels(
             user_id=self.test_user_id,
             ctx=self.mock_context,
         )
-        
+
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].type, "text")
         self.assertEqual(json.loads(result[0].text), sample_labels)
-        
+
         mock_get_gmail_service.assert_called_once_with(self.test_user_id)
         mock_gmail_service_class.assert_called_once_with(mock_service)
         mock_gmail_service_instance.get_labels.assert_called_once()
@@ -176,13 +172,13 @@ class TestGmailTools(unittest.TestCase):
             self.sample_email,
             {"attachment1": self.sample_attachment},
         )
-        
+
         result = await bulk_get_gmail_emails(
             user_id=self.test_user_id,
             email_ids=["email1", "email2"],
             ctx=self.mock_context,
         )
-        
+
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].type, "text")
         expected_results = [
@@ -196,7 +192,7 @@ class TestGmailTools(unittest.TestCase):
             },
         ]
         self.assertEqual(json.loads(result[0].text), expected_results)
-        
+
         mock_get_gmail_service.assert_called_once_with(self.test_user_id)
         mock_gmail_service_class.assert_called_once_with(mock_service)
         self.assertEqual(mock_gmail_service_instance.get_email_by_id_with_attachments.call_count, 2)
@@ -209,7 +205,7 @@ class TestGmailTools(unittest.TestCase):
         mock_get_gmail_service.return_value = mock_service
         mock_gmail_service_instance = mock_gmail_service_class.return_value
         mock_gmail_service_instance.create_draft.return_value = self.sample_draft
-        
+
         result = await create_gmail_draft(
             user_id=self.test_user_id,
             to="recipient@example.com",
@@ -218,11 +214,11 @@ class TestGmailTools(unittest.TestCase):
             cc=["cc@example.com"],
             ctx=self.mock_context,
         )
-        
+
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].type, "text")
         self.assertEqual(json.loads(result[0].text), self.sample_draft)
-        
+
         mock_get_gmail_service.assert_called_once_with(self.test_user_id)
         mock_gmail_service_class.assert_called_once_with(mock_service)
         mock_gmail_service_instance.create_draft.assert_called_once_with(
@@ -240,17 +236,17 @@ class TestGmailTools(unittest.TestCase):
         mock_get_gmail_service.return_value = mock_service
         mock_gmail_service_instance = mock_gmail_service_class.return_value
         mock_gmail_service_instance.delete_draft.return_value = True
-        
+
         result = await delete_gmail_draft(
             user_id=self.test_user_id,
             draft_id=self.test_draft_id,
             ctx=self.mock_context,
         )
-        
+
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].type, "text")
         self.assertEqual(result[0].text, f"Successfully deleted draft ID: {self.test_draft_id}")
-        
+
         mock_get_gmail_service.assert_called_once_with(self.test_user_id)
         mock_gmail_service_class.assert_called_once_with(mock_service)
         mock_gmail_service_instance.delete_draft.assert_called_once_with(draft_id=self.test_draft_id)
@@ -266,8 +262,11 @@ class TestGmailTools(unittest.TestCase):
             self.sample_email,
             {"attachment1": self.sample_attachment},
         )
-        mock_gmail_service_instance.create_reply.return_value = {"id": "reply123", "threadId": "thread123"}
-        
+        mock_gmail_service_instance.create_reply.return_value = {
+            "id": "reply123",
+            "threadId": "thread123",
+        }
+
         result = await create_gmail_reply(
             user_id=self.test_user_id,
             original_message_id=self.test_email_id,
@@ -275,11 +274,11 @@ class TestGmailTools(unittest.TestCase):
             send=False,
             ctx=self.mock_context,
         )
-        
+
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].type, "text")
         self.assertEqual(json.loads(result[0].text), {"id": "reply123", "threadId": "thread123"})
-        
+
         mock_get_gmail_service.assert_called_once_with(self.test_user_id)
         mock_gmail_service_class.assert_called_once_with(mock_service)
         mock_gmail_service_instance.get_email_by_id_with_attachments.assert_called_once_with(
@@ -300,18 +299,18 @@ class TestGmailTools(unittest.TestCase):
         mock_get_gmail_service.return_value = mock_service
         mock_gmail_service_instance = mock_gmail_service_class.return_value
         mock_gmail_service_instance.get_attachment.return_value = self.sample_attachment
-        
+
         result = await get_gmail_attachment(
             user_id=self.test_user_id,
             message_id=self.test_email_id,
             attachment_id=self.test_attachment_id,
             ctx=self.mock_context,
         )
-        
+
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].type, "text")
         self.assertEqual(json.loads(result[0].text), self.sample_attachment)
-        
+
         mock_get_gmail_service.assert_called_once_with(self.test_user_id)
         mock_gmail_service_class.assert_called_once_with(mock_service)
         mock_gmail_service_instance.get_attachment.assert_called_once_with(
@@ -327,7 +326,7 @@ class TestGmailTools(unittest.TestCase):
         mock_get_gmail_service.return_value = mock_service
         mock_gmail_service_instance = mock_gmail_service_class.return_value
         mock_gmail_service_instance.get_attachment.return_value = self.sample_attachment
-        
+
         attachment_info = [
             {
                 "message_id": self.test_email_id,
@@ -335,19 +334,17 @@ class TestGmailTools(unittest.TestCase):
                 "save_path": "/tmp/test.pdf",
             }
         ]
-        
+
         result = await bulk_save_gmail_attachments(
             user_id=self.test_user_id,
             attachments=attachment_info,
             ctx=self.mock_context,
         )
-        
+
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].type, "text")
         self.assertTrue("Successfully processed attachment" in result[0].text)
-        
+
         mock_get_gmail_service.assert_called_once_with(self.test_user_id)
         mock_gmail_service_class.assert_called_once_with(mock_service)
-        mock_gmail_service_instance.get_attachment.assert_called_once_with(
-            self.test_email_id, self.test_attachment_id
-        )
+        mock_gmail_service_instance.get_attachment.assert_called_once_with(self.test_email_id, self.test_attachment_id)

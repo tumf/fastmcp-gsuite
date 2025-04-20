@@ -151,7 +151,10 @@ class TestGAuth(unittest.TestCase):
         mock_userinfo = MagicMock()
         mock_userinfo.get.return_value = mock_userinfo_get
         mock_userinfo_service.userinfo.return_value = mock_userinfo
-        mock_userinfo_get.execute.return_value = {"id": "user123", "email": "test@example.com"}
+        mock_userinfo_get.execute.return_value = {
+            "id": "user123",
+            "email": "test@example.com",
+        }
 
         # Call the function
         result = get_user_info(self.mock_credentials)
@@ -162,7 +165,9 @@ class TestGAuth(unittest.TestCase):
 
         # Verify API calls
         mock_build.assert_called_once_with(
-            serviceName="oauth2", version="v2", http=self.mock_credentials.authorize.return_value
+            serviceName="oauth2",
+            version="v2",
+            http=self.mock_credentials.authorize.return_value,
         )
 
     @patch("src.mcp_gsuite.gauth.build")
@@ -195,7 +200,9 @@ class TestGAuth(unittest.TestCase):
 
         # Verify flow was created correctly
         mock_flow_from_clientsecrets.assert_called_once_with(
-            "/path/to/client_secrets.json", "scope1 scope2", redirect_uri="http://localhost:4100/code"
+            "/path/to/client_secrets.json",
+            "scope1 scope2",
+            redirect_uri="http://localhost:4100/code",
         )
 
         # Verify params were set

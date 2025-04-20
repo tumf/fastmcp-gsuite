@@ -2,9 +2,6 @@ import json
 import unittest
 from unittest.mock import MagicMock, patch
 
-from fastmcp import Context
-from mcp.types import TextContent
-
 from src.mcp_gsuite.calendar_tools import (
     create_calendar_event,
     delete_calendar_event,
@@ -20,20 +17,20 @@ class TestCalendarTools(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures."""
         self.mock_calendar_service = MagicMock()
-        
+
         self.mock_context = MockContext()
-        
+
         self.test_user_id = "test@example.com"
         self.test_calendar_id = "primary"
         self.test_event_id = "test_event_123"
-        
+
         self.sample_calendar = {
             "id": self.test_calendar_id,
             "summary": "Test Calendar",
             "description": "A test calendar",
             "timeZone": "UTC",
         }
-        
+
         self.sample_event = {
             "id": self.test_event_id,
             "summary": "Test Event",
@@ -51,16 +48,16 @@ class TestCalendarTools(unittest.TestCase):
         mock_get_calendar_service.return_value = mock_service
         mock_calendar_service_instance = mock_calendar_service_class.return_value
         mock_calendar_service_instance.list_calendars.return_value = [self.sample_calendar]
-        
+
         result = await list_calendars(
             user_id=self.test_user_id,
             ctx=self.mock_context,
         )
-        
+
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].type, "text")
         self.assertEqual(json.loads(result[0].text), [self.sample_calendar])
-        
+
         mock_get_calendar_service.assert_called_once_with(self.test_user_id)
         mock_calendar_service_class.assert_called_once_with(mock_service)
         mock_calendar_service_instance.list_calendars.assert_called_once()
@@ -73,16 +70,16 @@ class TestCalendarTools(unittest.TestCase):
         mock_get_calendar_service.return_value = mock_service
         mock_calendar_service_instance = mock_calendar_service_class.return_value
         mock_calendar_service_instance.list_calendars.return_value = []
-        
+
         result = await list_calendars(
             user_id=self.test_user_id,
             ctx=self.mock_context,
         )
-        
+
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].type, "text")
         self.assertEqual(result[0].text, "No calendars found.")
-        
+
         mock_get_calendar_service.assert_called_once_with(self.test_user_id)
         mock_calendar_service_class.assert_called_once_with(mock_service)
         mock_calendar_service_instance.list_calendars.assert_called_once()
@@ -95,10 +92,10 @@ class TestCalendarTools(unittest.TestCase):
         mock_get_calendar_service.return_value = mock_service
         mock_calendar_service_instance = mock_calendar_service_class.return_value
         mock_calendar_service_instance.list_events.return_value = [self.sample_event]
-        
+
         start_time = "2023-01-01T00:00:00Z"
         end_time = "2023-01-02T00:00:00Z"
-        
+
         result = await list_calendar_events(
             user_id=self.test_user_id,
             calendar_id=self.test_calendar_id,
@@ -107,11 +104,11 @@ class TestCalendarTools(unittest.TestCase):
             max_results=10,
             ctx=self.mock_context,
         )
-        
+
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].type, "text")
         self.assertEqual(json.loads(result[0].text), [self.sample_event])
-        
+
         mock_get_calendar_service.assert_called_once_with(self.test_user_id)
         mock_calendar_service_class.assert_called_once_with(mock_service)
         mock_calendar_service_instance.list_events.assert_called_once_with(
@@ -121,7 +118,7 @@ class TestCalendarTools(unittest.TestCase):
             max_results=10,
             query=None,
         )
-        
+
     @patch("src.mcp_gsuite.calendar_tools.auth_helper.get_calendar_service")
     @patch("src.mcp_gsuite.calendar_tools.calendar_impl.CalendarService")
     async def test_create_calendar_event_success(self, mock_calendar_service_class, mock_get_calendar_service):
@@ -130,10 +127,10 @@ class TestCalendarTools(unittest.TestCase):
         mock_get_calendar_service.return_value = mock_service
         mock_calendar_service_instance = mock_calendar_service_class.return_value
         mock_calendar_service_instance.create_event.return_value = self.sample_event
-        
+
         start_datetime = "2023-01-01T10:00:00Z"
         end_datetime = "2023-01-01T11:00:00Z"
-        
+
         result = await create_calendar_event(
             user_id=self.test_user_id,
             calendar_id=self.test_calendar_id,
@@ -144,11 +141,11 @@ class TestCalendarTools(unittest.TestCase):
             location="Test Location",
             ctx=self.mock_context,
         )
-        
+
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].type, "text")
         self.assertEqual(json.loads(result[0].text), self.sample_event)
-        
+
         mock_get_calendar_service.assert_called_once_with(self.test_user_id)
         mock_calendar_service_class.assert_called_once_with(mock_service)
         mock_calendar_service_instance.create_event.assert_called_once_with(
@@ -170,18 +167,18 @@ class TestCalendarTools(unittest.TestCase):
         mock_get_calendar_service.return_value = mock_service
         mock_calendar_service_instance = mock_calendar_service_class.return_value
         mock_calendar_service_instance.delete_event.return_value = True
-        
+
         result = await delete_calendar_event(
             user_id=self.test_user_id,
             calendar_id=self.test_calendar_id,
             event_id=self.test_event_id,
             ctx=self.mock_context,
         )
-        
+
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].type, "text")
         self.assertEqual(result[0].text, f"Successfully deleted event ID: {self.test_event_id}")
-        
+
         mock_get_calendar_service.assert_called_once_with(self.test_user_id)
         mock_calendar_service_class.assert_called_once_with(mock_service)
         mock_calendar_service_instance.delete_event.assert_called_once_with(

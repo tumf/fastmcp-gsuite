@@ -1,7 +1,5 @@
 """Mock implementation of the Context class from fastmcp."""
 
-from typing import Any, Callable, Coroutine
-
 
 class MockContext:
     """Mock implementation of the Context class from fastmcp."""
