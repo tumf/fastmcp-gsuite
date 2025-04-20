@@ -1,5 +1,7 @@
 # fastmcp-gsuite MCP server (using fastmcp)
 
+[![codecov](https://codecov.io/gh/YOUR_GITHUB_USERNAME/fastmcp-gsuite/branch/main/graph/badge.svg)](https://codecov.io/gh/YOUR_GITHUB_USERNAME/fastmcp-gsuite)
+
 MCP server to interact with Google products, rewritten using the `fastmcp` library.
 
 This project is a fork of [mcp-gsuite](https://github.com/MarkusPfundstein/mcp-gsuite).
@@ -328,5 +330,7 @@ dotenvx run -f .env.local -- uv run make mcp-contacts-e2e-tests
 - Temporary authentication files are created during test execution but are automatically deleted afterward
 
 ## License
+
 # Test push hook
+
 # Test push hook
