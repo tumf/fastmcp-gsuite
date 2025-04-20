@@ -48,11 +48,8 @@ repos:
         language: python
         stages: [commit-msg]
 
-  - repo: local
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
     hooks:
-      - id: check-secrets
-        name: Check for unencrypted secrets
-        entry: python -c "import sys, re; patterns = [r'(?<!encrypted:)(?<![a-zA-Z0-9_-])(?:secret|api_key|password|token|credentials?)\\s*[=:]\\s*[\\'\\\"]((?!encrypted:)[^\\'\\\"]*)[\\'\\\"]', r'GOCSPX-[a-zA-Z0-9-]{30,}']; sys.exit(1 if any(any(re.search(pattern, open(f, 'r', encoding='utf-8', errors='ignore').read()) for pattern in patterns) and not 'credentials/' in f and not 'test' in f.lower() and not '.pre-commit-config.yaml' in f and not 'makefile' in f.lower() for f in sys.argv[1:]) else 0)"
-        language: python
-        types: [text]
-        exclude: "credentials/.*|\\.pre-commit-config.yaml|Makefile|\\.git/"
+      - id: detect-secrets
+        exclude: 'credentials/.*|.*\.enc\..*|.*encrypted:.*|\.git/.*|.*\.ipynb|\.mypy_cache/.*|\.pytest_cache/.*|\.ruff_cache/.*'

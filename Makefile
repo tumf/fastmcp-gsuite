@@ -17,6 +17,7 @@ all: lint format test
 setup-pre-commit:
 	@echo "Setting up pre-commit hooks..."
 	uv sync --dev
+	uv run detect-secrets scan --baseline .secrets.baseline
 	uv run pre-commit install
 
 # Linting
