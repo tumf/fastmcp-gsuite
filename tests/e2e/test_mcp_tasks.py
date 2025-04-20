@@ -145,7 +145,10 @@ class TestMCPTasks:
 
             # Execute the tool
             result = await send_tools_call(
-                read_stream, write_stream, list_tasklists_tool["name"], {"user_id": credentials["email"]}
+                read_stream,
+                write_stream,
+                list_tasklists_tool["name"],
+                {"user_id": credentials["email"]},
             )
 
             # Verify results
