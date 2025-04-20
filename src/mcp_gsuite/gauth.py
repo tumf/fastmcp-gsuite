@@ -5,7 +5,12 @@ import os
 import httplib2
 import pydantic
 from googleapiclient.discovery import build
-from oauth2client.client import Credentials, FlowExchangeError, OAuth2Credentials, flow_from_clientsecrets
+from oauth2client.client import (
+    Credentials,
+    FlowExchangeError,
+    OAuth2Credentials,
+    flow_from_clientsecrets,
+)
 
 # import argparse # Replaced by settings
 from .settings import settings
