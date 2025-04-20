@@ -4,14 +4,16 @@ import os
 import shutil
 
 import pytest
-from chuk_mcp.mcp_client.messages.initialize.send_messages import \
-    send_initialize
+from chuk_mcp.mcp_client.messages.initialize.send_messages import send_initialize
 from chuk_mcp.mcp_client.messages.ping.send_messages import send_ping
-from chuk_mcp.mcp_client.messages.tools.send_messages import (send_tools_call,
-                                                              send_tools_list)
+from chuk_mcp.mcp_client.messages.tools.send_messages import (
+    send_tools_call,
+    send_tools_list,
+)
 from chuk_mcp.mcp_client.transport.stdio.stdio_client import stdio_client
-from chuk_mcp.mcp_client.transport.stdio.stdio_server_parameters import \
-    StdioServerParameters
+from chuk_mcp.mcp_client.transport.stdio.stdio_server_parameters import (
+    StdioServerParameters,
+)
 
 # Get UV path from environment variables or PATH
 UV_PATH = (

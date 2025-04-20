@@ -6,13 +6,15 @@ import shutil
 from datetime import datetime, timedelta
 
 import pytest
-from chuk_mcp.mcp_client.messages.initialize.send_messages import \
-    send_initialize
-from chuk_mcp.mcp_client.messages.tools.send_messages import (send_tools_call,
-                                                              send_tools_list)
+from chuk_mcp.mcp_client.messages.initialize.send_messages import send_initialize
+from chuk_mcp.mcp_client.messages.tools.send_messages import (
+    send_tools_call,
+    send_tools_list,
+)
 from chuk_mcp.mcp_client.transport.stdio.stdio_client import stdio_client
-from chuk_mcp.mcp_client.transport.stdio.stdio_server_parameters import \
-    StdioServerParameters
+from chuk_mcp.mcp_client.transport.stdio.stdio_server_parameters import (
+    StdioServerParameters,
+)
 
 # デバッグログを有効化
 logging.basicConfig(
@@ -255,7 +257,9 @@ class TestMCPGoogleSuite:
 
             # 検索結果が存在することを確認
             assert "messages" in search_result, "メッセージの検索に失敗しました"
-            assert len(search_result["messages"]) > 0, "作成したドラフトが見つかりませんでした"
+            assert (
+                len(search_result["messages"]) > 0
+            ), "作成したドラフトが見つかりませんでした"
 
             # ドラフトのクリーンアップ
             delete_result = await send_tools_call(
@@ -299,7 +303,9 @@ class TestMCPGoogleSuite:
                 for tool in tools_response["tools"]
                 if "calendar" in tool["name"].lower()
             ]
-            assert len(calendar_tools) > 0, "Calendarに関連するツールが見つかりませんでした"
+            assert (
+                len(calendar_tools) > 0
+            ), "Calendarに関連するツールが見つかりませんでした"
 
             # ツール名を出力
             for tool in calendar_tools:
@@ -395,7 +401,9 @@ class TestMCPGoogleSuite:
 
             # メッセージの詳細が返されたことを確認
             assert "id" in message_result, "メッセージの取得に失敗しました"
-            assert message_result["id"] == message_id, "取得したメッセージIDが一致しません"
+            assert (
+                message_result["id"] == message_id
+            ), "取得したメッセージIDが一致しません"
 
             # ヘッダー情報が含まれていることを確認
             assert "payload" in message_result, "ペイロード情報がありません"
@@ -494,7 +502,9 @@ class TestMCPGoogleSuite:
                 primary_calendar = calendar
                 break
 
-        assert primary_calendar is not None, "プライマリカレンダーが見つかりませんでした"
+        assert (
+            primary_calendar is not None
+        ), "プライマリカレンダーが見つかりませんでした"
 
         # カレンダー情報を出力
         print(f"Found primary calendar: {primary_calendar.get('summary')}")

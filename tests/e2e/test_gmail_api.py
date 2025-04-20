@@ -22,10 +22,14 @@ class TestGmailAPI:
         self.google_client_secret = os.environ.get("GOOGLE_CLIENT_SECRET")
 
         # 認証情報が設定されていることを確認
-        assert credentials_json_str, "GSUITE_CREDENTIALS_JSON環境変数が設定されていません"
+        assert (
+            credentials_json_str
+        ), "GSUITE_CREDENTIALS_JSON環境変数が設定されていません"
         assert self.google_email, "GOOGLE_ACCOUNT_EMAIL環境変数が設定されていません"
         assert self.google_client_id, "GOOGLE_CLIENT_ID環境変数が設定されていません"
-        assert self.google_client_secret, "GOOGLE_CLIENT_SECRET環境変数が設定されていません"
+        assert (
+            self.google_client_secret
+        ), "GOOGLE_CLIENT_SECRET環境変数が設定されていません"
 
         # Base64エンコードされた認証情報をデコード
         try:

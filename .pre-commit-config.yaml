@@ -18,15 +18,17 @@ repos:
         types: [python]
         exclude: "tests/.*|.*/test_.*\\.py"
 
-  - repo: https://github.com/psf/black
-    rev: 23.12.1
-    hooks:
-      - id: black
-
   - repo: https://github.com/pycqa/isort
     rev: 5.13.2
     hooks:
       - id: isort
+        name: isort (python)
+        args: ["--profile", "black"]
+
+  - repo: https://github.com/psf/black
+    rev: 25.1.0
+    hooks:
+      - id: black
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
     rev: v0.1.11
@@ -52,4 +54,4 @@ repos:
     rev: v1.4.0
     hooks:
       - id: detect-secrets
-        exclude: 'credentials/.*|.*\.enc\..*|.*encrypted:.*|\.git/.*|.*\.ipynb|\.mypy_cache/.*|\.pytest_cache/.*|\.ruff_cache/.*'
+        exclude: 'credentials/.*|.*\.enc\..*|.*encrypted:.*|\.git/.*|.*\.ipynb|\.mypy_cache/.*|\.pytest_cache/.*|\.ruff_cache/.*|\.env\..*'

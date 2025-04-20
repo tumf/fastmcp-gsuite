@@ -20,10 +20,14 @@ class TestGoogleAuth:
         self.google_client_secret = os.environ.get("GOOGLE_CLIENT_SECRET")
 
         # 認証情報が設定されていることを確認
-        assert credentials_json_str, "GSUITE_CREDENTIALS_JSON環境変数が設定されていません"
+        assert (
+            credentials_json_str
+        ), "GSUITE_CREDENTIALS_JSON環境変数が設定されていません"
         assert self.google_email, "GOOGLE_ACCOUNT_EMAIL環境変数が設定されていません"
         assert self.google_client_id, "GOOGLE_CLIENT_ID環境変数が設定されていません"
-        assert self.google_client_secret, "GOOGLE_CLIENT_SECRET環境変数が設定されていません"
+        assert (
+            self.google_client_secret
+        ), "GOOGLE_CLIENT_SECRET環境変数が設定されていません"
 
         # Base64エンコードされた認証情報をデコード
         try:
@@ -79,7 +83,9 @@ class TestGoogleAuth:
         """GoogleのGmail APIを使用して認証とアクセストークンの取得をテスト"""
         # トークンリフレッシュが必要な場合に自動的に更新される
         if not self.credentials.token and self.credentials.refresh_token:
-            print("アクセストークンがないため、リフレッシュトークンを使用して更新を試みます")
+            print(
+                "アクセストークンがないため、リフレッシュトークンを使用して更新を試みます"
+            )
             try:
                 self.credentials.refresh(Request())
                 print(f"トークンの更新に成功しました: {self.credentials.token[:10]}...")
@@ -113,7 +119,11 @@ class TestGoogleAuth:
 
             print("Gmail APIでの認証確認に成功しました")
         except Exception as e:
-            print(f"Gmail APIへのアクセスに失敗しました - 詳細エラー: {e.__class__.__name__}: {str(e)}")
+            print(
+                f"Gmail APIへのアクセスに失敗しました - 詳細エラー: {e.__class__.__name__}: {str(e)}"
+            )
             print(traceback.format_exc())
-            pytest.skip(f"Gmail APIへのアクセスに失敗しました: {e.__class__.__name__}: {str(e)}")
+            pytest.skip(
+                f"Gmail APIへのアクセスに失敗しました: {e.__class__.__name__}: {str(e)}"
+            )
             return
