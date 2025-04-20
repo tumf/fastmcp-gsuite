@@ -41,12 +41,12 @@ jobs:
         run: |
           uv run pytest --ignore=tests/e2e
 
-  # e2eテストはCI環境では実行しません
-  # これには以下の理由があります:
-  # 1. e2eテストには実際のGoogleアカウント認証情報が必要
-  # 2. MCPテストには実際のアカウント接続と通信が必要
-  # 3. テスト環境は環境変数を通じて秘密情報を必要とする
+  # E2E tests are not executed in CI environments
+  # This is for the following reasons:
+  # 1. E2E tests require actual Google account credentials
+  # 2. MCP tests require real account connections and communication
+  # 3. Test environments need secret information via environment variables
   #
-  # e2eテストはローカル環境で以下のように実行してください:
-  #   - 標準e2eテスト: dotenvx run -f .env.local -- uv run make e2e-tests
-  #   - MCPベースのe2eテスト: dotenvx run -f .env.local -- uv run make mcp-e2e-tests
+  # Run E2E tests in the local environment as follows:
+  #   - Standard E2E tests: dotenvx run -f .env.local -- uv run make e2e-tests
+  #   - MCP-based E2E tests: dotenvx run -f .env.local -- uv run make mcp-e2e-tests

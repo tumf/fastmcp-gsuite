@@ -11,31 +11,31 @@ from chuk_mcp.mcp_client.transport.stdio.stdio_client import stdio_client
 from chuk_mcp.mcp_client.transport.stdio.stdio_server_parameters import \
     StdioServerParameters
 
-# デバッグログを有効化
+# Enable debug logging
 logging.basicConfig(
     level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
-# uvのパスを環境変数から取得、またはPATHから検索
+# Get UV path from environment variables or search in PATH
 UV_PATH = os.environ.get("UV_PATH") or shutil.which("uv")
 if not UV_PATH:
     pytest.skip("uv command not found in PATH or UV_PATH not set")
 
 
 class TestSimpleServer:
-    """シンプルなMCPサーバーのテスト"""
+    """Test for simple MCP server"""
 
     def setup_method(self):
-        """テスト環境のセットアップ"""
-        # 親プロセスの環境変数をコピー
+        """Set up test environment"""
+        # Copy parent process environment variables
         self.env = os.environ.copy()
 
     async def _connect_and_initialize(self):
-        """MCPサーバーに接続して初期化する"""
+        """Connect to and initialize the MCP server"""
         logger.debug(f"Using UV_PATH: {UV_PATH}")
 
-        # StdioServerParametersを使用してサーバーパラメータを設定
+        # Set up server parameters using StdioServerParameters
         server_params = StdioServerParameters(
             command=UV_PATH,
             args=["run", "python", "-m", "tests.simple_server", "--stdio"],
@@ -45,14 +45,14 @@ class TestSimpleServer:
         logger.debug(
             f"Connecting to server with parameters: command={UV_PATH}, args={server_params.args}"
         )
-        # サーバーに接続
+        # Connect to the server
         try:
             async with stdio_client(server_params) as (read_stream, write_stream):
                 logger.debug("Connection established, initializing server...")
-                # サーバーを初期化
+                # Initialize the server
                 init_result = await send_initialize(read_stream, write_stream)
                 logger.debug(f"Server initialization result: {init_result}")
-                assert init_result, "サーバー初期化に失敗しました"
+                assert init_result, "Failed to initialize server"
 
                 logger.debug("Server initialized successfully")
                 return read_stream, write_stream
@@ -62,24 +62,24 @@ class TestSimpleServer:
 
     @pytest.mark.asyncio
     async def test_hello_world(self):
-        """シンプルなhello_worldツールのテスト"""
+        """Test the simple hello_world tool"""
         read_stream, write_stream = await self._connect_and_initialize()
 
-        # 利用可能なツールの一覧を取得
+        # Get list of available tools
         logger.debug("Getting tools list...")
         tools_response = await send_tools_list(read_stream, write_stream)
 
-        # ツールリストが返されたことを確認
-        assert "tools" in tools_response, "ツールリストが返されませんでした"
-        assert len(tools_response["tools"]) > 0, "利用可能なツールがありません"
+        # Verify that tool list was returned
+        assert "tools" in tools_response, "Tool list was not returned"
+        assert len(tools_response["tools"]) > 0, "No tools available"
 
-        # hello_worldツールが含まれているか確認
+        # Check if hello_world tool is included
         hello_tools = [
             tool for tool in tools_response["tools"] if "hello_world" == tool["name"]
         ]
-        assert len(hello_tools) > 0, "hello_worldツールが見つかりませんでした"
+        assert len(hello_tools) > 0, "hello_world tool not found"
 
-        # hello_worldツールを呼び出し
+        # Call hello_world tool
         logger.debug("Calling hello_world tool...")
         result = await send_tools_call(
             read_stream,
@@ -88,5 +88,7 @@ class TestSimpleServer:
             arguments={"name": "Test User"},
         )
 
-        # 結果を確認
-        assert "Hello, Test User!" in str(result), "hello_worldツールからの応答が正しくありません"
+        # Verify result
+        assert "Hello, Test User!" in str(
+            result
+        ), "Response from hello_world tool is incorrect"

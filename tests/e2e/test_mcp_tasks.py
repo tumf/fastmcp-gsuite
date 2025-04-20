@@ -12,7 +12,7 @@ from chuk_mcp.mcp_client.transport.stdio.stdio_client import stdio_client
 from chuk_mcp.mcp_client.transport.stdio.stdio_server_parameters import \
     StdioServerParameters
 
-# uvのパスを環境変数から取得するか、PATHから探す
+# Get UV path from environment variables or PATH
 UV_PATH = (
     os.environ.get("UV_PATH") or shutil.which("uv") or "/Users/tumf/.pyenv/shims/uv"
 )
@@ -21,14 +21,14 @@ UV_PATH = (
 @pytest.fixture(scope="session")
 def credentials():
     """Set up the test environment with credentials from environment variables"""
-    # 環境変数から認証情報を取得
+    # Get authentication information from environment variables
     credentials_json_str = os.environ.get("GSUITE_CREDENTIALS_JSON")
     google_email = os.environ.get("GOOGLE_ACCOUNT_EMAIL")
     google_project_id = os.environ.get("GOOGLE_PROJECT_ID")
     google_client_id = os.environ.get("GOOGLE_CLIENT_ID")
     google_client_secret = os.environ.get("GOOGLE_CLIENT_SECRET")
 
-    # 認証情報が設定されていることを確認
+    # Verify that authentication information is set
     assert (
         credentials_json_str
     ), "GSUITE_CREDENTIALS_JSON environment variable is not set"
@@ -37,13 +37,13 @@ def credentials():
     assert google_client_secret, "GOOGLE_CLIENT_SECRET environment variable is not set"
 
     try:
-        # Base64デコード
+        # Base64 decode
         credentials_json_decoded = base64.b64decode(credentials_json_str).decode(
             "utf-8"
         )
         decoded_credentials = json.loads(credentials_json_decoded)
 
-        # OAuth2Credentialsの必須フィールド
+        # Required fields for OAuth2Credentials
         credentials_json = {
             "access_token": decoded_credentials.get("access_token", ""),
             "client_id": google_client_id,
@@ -74,21 +74,21 @@ def credentials():
     except Exception as e:
         pytest.fail(f"Failed to decode credentials: {str(e)}")
 
-    # 一時的な認証情報ファイルを作成
+    # Create temporary credentials file
     credentials_file = ".e2e_test_credentials.json"
     with open(credentials_file, "w") as f:
         json.dump(credentials_json, f)
 
-    # OAuth2認証ファイルを作成
+    # Create OAuth2 authentication file
     oauth2_file = f".oauth2.{google_email}.json"
     with open(oauth2_file, "w") as f:
         json.dump(credentials_json, f)
 
-    # 環境変数を設定してMCPサーバーの実行に必要なパラメータを提供
+    # Set environment variables needed to run the MCP server
     os.environ["GSUITE_CREDENTIALS_FILE"] = credentials_file
     os.environ["GSUITE_EMAIL"] = google_email
 
-    # テスト用のデータを返す
+    # Return test data
     yield {
         "credentials_file": credentials_file,
         "oauth2_file": oauth2_file,
@@ -98,7 +98,7 @@ def credentials():
         "client_secret": google_client_secret,
     }
 
-    # テスト後にファイルをクリーンアップ
+    # Clean up files after testing
     if os.path.exists(credentials_file):
         os.remove(credentials_file)
     if os.path.exists(oauth2_file):
@@ -109,8 +109,8 @@ def credentials():
 class TestMCPTasks:
     @pytest.mark.e2e
     async def test_list_task_lists(self, credentials):
-        """Google Tasksのタスクリスト一覧を取得するテスト"""
-        # 親プロセスの環境変数を取得し、必要な変数を追加
+        """Test for retrieving Google Tasks task list"""
+        # Get parent process environment variables and add necessary variables
         env = os.environ.copy()
         env.update(
             {
@@ -119,31 +119,31 @@ class TestMCPTasks:
             }
         )
 
-        # MCPサーバーのパラメータを設定
+        # Set MCP server parameters
         server_params = StdioServerParameters(
             command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env
         )
 
-        # サーバーに接続
+        # Connect to the server
         async with stdio_client(server_params) as (read_stream, write_stream):
-            # 初期化
+            # Initialize
             init_result = await send_initialize(read_stream, write_stream)
             assert init_result, "Failed to initialize MCP server"
 
-            # ツール一覧を取得
+            # Get tool list
             tools_response = await send_tools_list(read_stream, write_stream)
             assert "tools" in tools_response, "No tools found in response"
 
-            # Tasks関連のツールを探す
+            # Find Tasks related tools
             tasks_tools = [
                 tool
                 for tool in tools_response["tools"]
                 if "task" in tool["name"].lower()
             ]
 
-            # Tasksツールがある場合はテストを実行
+            # Run the test if Tasks tools are available
             if tasks_tools:
-                # タスクリスト一覧を取得するツールを探す
+                # Find the tool to get task list
                 list_tasklists_tool = next(
                     (
                         tool
@@ -155,18 +155,18 @@ class TestMCPTasks:
                 )
 
                 if list_tasklists_tool:
-                    # ツールを実行
+                    # Execute the tool
                     result = await send_tools_call(
                         read_stream, write_stream, list_tasklists_tool["name"], {}
                     )
 
-                    # 結果を検証
+                    # Verify results
                     assert result, "Tool execution failed"
                     assert (
                         "items" in result or "taskLists" in result
                     ), "No task lists found in response"
 
-                    # 結果の表示
+                    # Display results
                     task_lists = result.get("items") or result.get("taskLists") or []
                     print(f"Found {len(task_lists)} task lists")
                 else:

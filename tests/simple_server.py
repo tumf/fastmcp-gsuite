@@ -4,13 +4,13 @@ from typing import Annotated, List
 from fastmcp import Context, FastMCP
 from mcp.types import TextContent
 
-# ロギングの設定
+# Logging configuration
 logging.basicConfig(
     level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
-# シンプルなMCPサーバーの作成
+# Create a simple MCP server
 mcp = FastMCP(
     "simple-test-server",
     instructions="Simple MCP Server for testing connection issues.",

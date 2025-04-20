@@ -273,61 +273,58 @@ The environment file should contain the following variables:
 
 Both types of E2E tests are excluded from CI pipelines and should only be run locally with valid credentials.
 
-### E2E テスト実行方法
+### E2E Test Execution Guide
 
-このプロジェクトでは、実際のGoogleアカウントを利用したエンドツーエンド（E2E）テストを実装しています。E2Eテストは以下の手順で実行できます。
+This project implements end-to-end (E2E) tests using real Google accounts. You can run the E2E tests using the following steps.
 
-#### 前提条件
+#### Prerequisites
 
-E2Eテストを実行するには、以下が必要です：
+To run E2E tests, you need:
 
-1. `.env.local` ファイルに必要な環境変数が設定されていること
-   - `GSUITE_CREDENTIALS_JSON` : Base64エンコードされたGoogle認証情報
-   - `GOOGLE_ACCOUNT_EMAIL` : テスト用Googleアカウントのメールアドレス
-   - `GOOGLE_PROJECT_ID` : GoogleプロジェクトID
-   - `GOOGLE_CLIENT_ID` : GoogleクライアントID
-   - `GOOGLE_CLIENT_SECRET` : Googleクライアントシークレット
+1. A `.env.local` file with the following environment variables:
+   - `GSUITE_CREDENTIALS_JSON` : Base64 encoded Google credentials
+   - `GOOGLE_ACCOUNT_EMAIL` : Google account email for testing
+   - `GOOGLE_PROJECT_ID` : Google project ID
+   - `GOOGLE_CLIENT_ID` : Google client ID
+   - `GOOGLE_CLIENT_SECRET` : Google client secret
 
-2. E2Eテスト用の依存関係がインストールされていること
-
-
-```bash
-   uv pip install -e ".[e2e]"
-   ```
-
-#### テスト実行コマンド
-
-- すべてのE2Eテストを実行:
-
+2. E2E test dependencies installed:
 
 ```bash
-  dotenvx run -f .env.local -- uv run make mcp-all-e2e-tests
-  ```
+uv pip install -e ".[e2e]"
+```
 
-- 個別のサービスに対するE2Eテスト:
+#### Test Execution Commands
 
+- Run all E2E tests:
 
 ```bash
-  # Gmail関連のテスト
-  dotenvx run -f .env.local -- uv run make mcp-e2e-tests
+dotenvx run -f .env.local -- uv run make mcp-all-e2e-tests
+```
 
-  # Google Calendar関連のテスト
-  dotenvx run -f .env.local -- uv run make mcp-google-e2e-tests
+- Run tests for individual services:
 
-  # Google Drive関連のテスト
-  dotenvx run -f .env.local -- uv run make mcp-gdrive-e2e-tests
+```bash
+# Gmail tests
+dotenvx run -f .env.local -- uv run make mcp-e2e-tests
 
-  # Google Tasks関連のテスト
-  dotenvx run -f .env.local -- uv run make mcp-tasks-e2e-tests
+# Google Calendar tests
+dotenvx run -f .env.local -- uv run make mcp-google-e2e-tests
 
-  # Google Contacts関連のテスト
-  dotenvx run -f .env.local -- uv run make mcp-contacts-e2e-tests
-  ```
+# Google Drive tests
+dotenvx run -f .env.local -- uv run make mcp-gdrive-e2e-tests
 
-#### 注意事項
+# Google Tasks tests
+dotenvx run -f .env.local -- uv run make mcp-tasks-e2e-tests
 
-- E2Eテストは実際のGoogleアカウントにアクセスするため、本番環境には影響を与えないよう注意してください
-- CI環境ではE2Eテストは自動的にスキップされます
-- テスト実行中は一時的な認証ファイルが作成されますが、テスト終了後に自動的に削除されます
+# Google Contacts tests
+dotenvx run -f .env.local -- uv run make mcp-contacts-e2e-tests
+```
+
+#### Important Notes
+
+- E2E tests access real Google accounts, so be careful not to affect production environments
+- E2E tests are automatically skipped in CI environments
+- Temporary authentication files are created during test execution but are automatically deleted afterward
 
 ## License
