@@ -42,4 +42,4 @@ repos:
     rev: v1.4.0
     hooks:
       - id: detect-secrets
-        exclude: 'credentials/.*|.*\.enc\..*|.*encrypted:.*|\.git/.*|.*\.ipynb|\.mypy_cache/.*|\.pytest_cache/.*|\.ruff_cache/.*|\.env\..*'
+        exclude: 'credentials/.*|.*\.enc\..*|.*encrypted:.*|\.git/.*|.*\.ipynb|\.mypy_cache/.*|\.pytest_cache/.*|\.ruff_cache/.*|\.env\..*|\.secrets\.baseline'
