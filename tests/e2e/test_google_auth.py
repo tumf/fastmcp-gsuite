@@ -13,7 +13,9 @@ class TestGoogleAuth:
         google_email = oauth_token["email"]
 
         # アクセストークンが有効であることを確認
-        print(f"アクセストークン: {credentials.token[:10]}... (存在: {bool(credentials.token)})")
+        print(
+            f"アクセストークン: {credentials.token[:10]}... (存在: {bool(credentials.token)})"
+        )
         assert credentials.token, "アクセストークンが取得できませんでした"
 
         # 実際にGmail APIを呼び出してみる
@@ -36,7 +38,11 @@ class TestGoogleAuth:
 
             print("Gmail APIでの認証確認に成功しました")
         except Exception as e:
-            print(f"Gmail APIへのアクセスに失敗しました - 詳細エラー: {e.__class__.__name__}: {e!s}")
+            print(
+                f"Gmail APIへのアクセスに失敗しました - 詳細エラー: {e.__class__.__name__}: {e!s}"
+            )
             print(traceback.format_exc())
-            pytest.skip(f"Gmail APIへのアクセスに失敗しました: {e.__class__.__name__}: {e!s}")
+            pytest.skip(
+                f"Gmail APIへのアクセスに失敗しました: {e.__class__.__name__}: {e!s}"
+            )
             return

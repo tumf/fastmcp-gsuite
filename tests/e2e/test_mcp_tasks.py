@@ -4,18 +4,18 @@ import os
 import shutil
 
 import pytest
-from chuk_mcp.mcp_client.messages.initialize.send_messages import send_initialize
-from chuk_mcp.mcp_client.messages.tools.send_messages import (
-    send_tools_call,
-    send_tools_list,
-)
+from chuk_mcp.mcp_client.messages.initialize.send_messages import \
+    send_initialize
+from chuk_mcp.mcp_client.messages.tools.send_messages import (send_tools_call,
+                                                              send_tools_list)
 from chuk_mcp.mcp_client.transport.stdio.stdio_client import stdio_client
-from chuk_mcp.mcp_client.transport.stdio.stdio_server_parameters import (
-    StdioServerParameters,
-)
+from chuk_mcp.mcp_client.transport.stdio.stdio_server_parameters import \
+    StdioServerParameters
 
 # Get UV path from environment variables or PATH
-UV_PATH = os.environ.get("UV_PATH") or shutil.which("uv") or "/Users/tumf/.pyenv/shims/uv"
+UV_PATH = (
+    os.environ.get("UV_PATH") or shutil.which("uv") or "/Users/tumf/.pyenv/shims/uv"
+)
 
 
 @pytest.fixture(scope="session")
@@ -29,14 +29,18 @@ def credentials():
     google_client_secret = os.environ.get("GOOGLE_CLIENT_SECRET")
 
     # Verify that authentication information is set
-    assert credentials_json_str, "GSUITE_CREDENTIALS_JSON environment variable is not set"
+    assert (
+        credentials_json_str
+    ), "GSUITE_CREDENTIALS_JSON environment variable is not set"
     assert google_email, "GOOGLE_ACCOUNT_EMAIL environment variable is not set"
     assert google_client_id, "GOOGLE_CLIENT_ID environment variable is not set"
     assert google_client_secret, "GOOGLE_CLIENT_SECRET environment variable is not set"
 
     try:
         # Base64 decode
-        credentials_json_decoded = base64.b64decode(credentials_json_str).decode("utf-8")
+        credentials_json_decoded = base64.b64decode(credentials_json_str).decode(
+            "utf-8"
+        )
         decoded_credentials = json.loads(credentials_json_decoded)
 
         # Required fields for OAuth2Credentials
@@ -46,7 +50,9 @@ def credentials():
             "client_secret": google_client_secret,
             "refresh_token": decoded_credentials.get("refresh_token", ""),
             "token_expiry": decoded_credentials.get("token_expiry", ""),
-            "token_uri": decoded_credentials.get("token_uri", "https://oauth2.googleapis.com/token"),
+            "token_uri": decoded_credentials.get(
+                "token_uri", "https://oauth2.googleapis.com/token"
+            ),
             "user_agent": "fastmcp-gsuite-e2e-tests",
             "revoke_uri": "https://oauth2.googleapis.com/revoke",
             "id_token": None,
@@ -114,7 +120,9 @@ class TestMCPTasks:
         )
 
         # Set MCP server parameters
-        server_params = StdioServerParameters(command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env)
+        server_params = StdioServerParameters(
+            command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env
+        )
 
         # Connect to the server
         async with stdio_client(server_params) as (read_stream, write_stream):
@@ -127,7 +135,11 @@ class TestMCPTasks:
             assert "tools" in tools_response, "No tools found in response"
 
             # Find Tasks related tools
-            tasks_tools = [tool for tool in tools_response["tools"] if "task" in tool["name"].lower()]
+            tasks_tools = [
+                tool
+                for tool in tools_response["tools"]
+                if "task" in tool["name"].lower()
+            ]
 
             # Skip test if no tasks tools are available
             if not tasks_tools:
@@ -135,7 +147,11 @@ class TestMCPTasks:
 
             # Find the tool to get task list
             list_tasklists_tool = next(
-                (tool for tool in tasks_tools if "list" in tool["name"].lower() and "list" in tool["name"].lower()),
+                (
+                    tool
+                    for tool in tasks_tools
+                    if "list" in tool["name"].lower() and "list" in tool["name"].lower()
+                ),
                 None,
             )
 
@@ -145,7 +161,10 @@ class TestMCPTasks:
 
             # Execute the tool
             result = await send_tools_call(
-                read_stream, write_stream, list_tasklists_tool["name"], {"user_id": credentials["email"]}
+                read_stream,
+                write_stream,
+                list_tasklists_tool["name"],
+                {"user_id": credentials["email"]},
             )
 
             # Verify results
@@ -167,12 +186,18 @@ class TestMCPTasks:
 
                     try:
                         tasklists_data = json.loads(response_text)
-                        if isinstance(tasklists_data, list) or isinstance(tasklists_data, dict):
+                        if isinstance(tasklists_data, list) or isinstance(
+                            tasklists_data, dict
+                        ):
                             has_tasklists = True
                             # Display results
                             task_lists = tasklists_data
                             if isinstance(tasklists_data, dict):
-                                task_lists = tasklists_data.get("items") or tasklists_data.get("taskLists") or []
+                                task_lists = (
+                                    tasklists_data.get("items")
+                                    or tasklists_data.get("taskLists")
+                                    or []
+                                )
                             print(f"Found {len(task_lists)} task lists")
                             break
                     except json.JSONDecodeError:

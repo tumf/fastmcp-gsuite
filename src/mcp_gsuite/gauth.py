@@ -5,7 +5,8 @@ import os
 import httplib2
 import pydantic
 from googleapiclient.discovery import build
-from oauth2client.client import Credentials, FlowExchangeError, OAuth2Credentials, flow_from_clientsecrets
+from oauth2client.client import (Credentials, FlowExchangeError,
+                                 OAuth2Credentials, flow_from_clientsecrets)
 
 # import argparse # Replaced by settings
 from .settings import settings
@@ -121,7 +122,9 @@ def get_stored_credentials(user_id: str) -> OAuth2Credentials | None:
     try:
         cred_file_path = _get_credential_filename(user_id=user_id)
         if not os.path.exists(cred_file_path):
-            logging.warning(f"No stored Oauth2 credentials yet at path: {cred_file_path}")
+            logging.warning(
+                f"No stored Oauth2 credentials yet at path: {cred_file_path}"
+            )
             return None
 
         with open(cred_file_path) as f:
@@ -172,7 +175,9 @@ def get_user_info(credentials):
     Returns:
     User information as a dict.
     """
-    user_info_service = build(serviceName="oauth2", version="v2", http=credentials.authorize(httplib2.Http()))
+    user_info_service = build(
+        serviceName="oauth2", version="v2", http=credentials.authorize(httplib2.Http())
+    )
     user_info = None
     try:
         user_info = user_info_service.userinfo().get().execute()
@@ -193,7 +198,9 @@ def get_authorization_url(email_address, state):
     Returns:
     Authorization URL to redirect the user to.
     """
-    flow = flow_from_clientsecrets(CLIENTSECRETS_LOCATION, " ".join(SCOPES), redirect_uri=REDIRECT_URI)
+    flow = flow_from_clientsecrets(
+        CLIENTSECRETS_LOCATION, " ".join(SCOPES), redirect_uri=REDIRECT_URI
+    )
     flow.params["access_type"] = "offline"
     flow.params["approval_prompt"] = "force"
     flow.params["user_id"] = email_address

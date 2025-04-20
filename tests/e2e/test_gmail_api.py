@@ -22,15 +22,21 @@ class TestGmailAPI:
         self.google_client_secret = os.environ.get("GOOGLE_CLIENT_SECRET")
 
         # 認証情報が設定されていることを確認
-        assert credentials_json_str, "GSUITE_CREDENTIALS_JSON環境変数が設定されていません"
+        assert (
+            credentials_json_str
+        ), "GSUITE_CREDENTIALS_JSON環境変数が設定されていません"
         assert self.google_email, "GOOGLE_ACCOUNT_EMAIL環境変数が設定されていません"
         assert self.google_client_id, "GOOGLE_CLIENT_ID環境変数が設定されていません"
-        assert self.google_client_secret, "GOOGLE_CLIENT_SECRET環境変数が設定されていません"
+        assert (
+            self.google_client_secret
+        ), "GOOGLE_CLIENT_SECRET環境変数が設定されていません"
 
         # Base64エンコードされた認証情報をデコード
         try:
             # Base64デコード
-            credentials_json_decoded = base64.b64decode(credentials_json_str).decode("utf-8")
+            credentials_json_decoded = base64.b64decode(credentials_json_str).decode(
+                "utf-8"
+            )
             credentials_json = json.loads(credentials_json_decoded)
         except Exception:
             # デコードに失敗した場合、直接JSONとして解析を試みる
@@ -45,10 +51,16 @@ class TestGmailAPI:
                     # それでも失敗する場合は、基本的な値を手動で抽出
                     import re
 
-                    refresh_token_match = re.search(r'refresh_token\\":\\"([^"\\]+)', credentials_json_str)
-                    refresh_token = refresh_token_match.group(1) if refresh_token_match else None
+                    refresh_token_match = re.search(
+                        r'refresh_token\\":\\"([^"\\]+)', credentials_json_str
+                    )
+                    refresh_token = (
+                        refresh_token_match.group(1) if refresh_token_match else None
+                    )
 
-                    token_match = re.search(r'token\\":\\"([^"\\]+)', credentials_json_str)
+                    token_match = re.search(
+                        r'token\\":\\"([^"\\]+)', credentials_json_str
+                    )
                     token = token_match.group(1) if token_match else None
 
                     credentials_json = {"refresh_token": refresh_token, "token": token}
@@ -81,11 +93,15 @@ class TestGmailAPI:
     def test_gmail_draft_creation(self):
         """Gmail APIを使用したドラフト作成のテスト"""
         # テスト用のメール件名と本文を作成
-        subject = f"E2E Test: {self._generate_random_string()} - {datetime.now().isoformat()}"
+        subject = (
+            f"E2E Test: {self._generate_random_string()} - {datetime.now().isoformat()}"
+        )
         body = f"This is an automated e2e test sent at {datetime.now().isoformat()}"
 
         # 自分自身にメールのドラフトを作成
-        sent_message = self.gmail.create_draft(to=self.google_email, subject=subject, body=body)
+        sent_message = self.gmail.create_draft(
+            to=self.google_email, subject=subject, body=body
+        )
 
         # ドラフトIDが返されることを確認
         assert sent_message.get("id"), "ドラフトの作成に失敗しました"
@@ -103,7 +119,9 @@ class TestGmailAPI:
 
         # 最初のメッセージの詳細を取得
         message_id = messages[0].get("id")
-        email_body, attachments = self.gmail.get_email_by_id_with_attachments(message_id)
+        email_body, attachments = self.gmail.get_email_by_id_with_attachments(
+            message_id
+        )
 
         # メッセージの内容を確認 (email_bodyがNoneでないことを確認)
         assert email_body is not None, "メールの内容が取得できませんでした"
