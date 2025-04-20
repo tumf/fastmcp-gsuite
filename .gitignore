@@ -18,3 +18,4 @@ prompt.txt
 .tmp/
 .coverage
 credentials/
+.e2e_test_credentials.json
