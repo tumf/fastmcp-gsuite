@@ -78,4 +78,3 @@ make test
 ```
 
 非同期テストの詳細については、[pytest-asyncio の公式ドキュメント](https://pytest-asyncio.readthedocs.io/en/latest/) を参照してください。
-

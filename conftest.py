@@ -9,9 +9,7 @@ def pytest_configure(config):
 
 def pytest_addoption(parser):
     """Add e2e command line option"""
-    parser.addoption(
-        "--run-e2e", action="store_true", default=False, help="Run e2e tests"
-    )
+    parser.addoption("--run-e2e", action="store_true", default=False, help="Run e2e tests")
 
 
 def pytest_collection_modifyitems(config, items):
