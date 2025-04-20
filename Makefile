@@ -99,13 +99,15 @@ publish: build
 
 # Version bumping
 VERSION_FILE := src/mcp_gsuite/__version__.py
+PYPROJECT_FILE := pyproject.toml
 
 # Helper function to update version
 define update_version
 	@echo "Updating version to $(1)"
 	@sed -i.bak 's/__version__ = "[^"]*"/__version__ = "$(1)"/' $(VERSION_FILE)
-	@rm -f $(VERSION_FILE).bak
-	@git add $(VERSION_FILE)
+	@sed -i.bak 's/version = "[^"]*"/version = "$(1)"/' $(PYPROJECT_FILE)
+	@rm -f $(VERSION_FILE).bak $(PYPROJECT_FILE).bak
+	@git add $(VERSION_FILE) $(PYPROJECT_FILE)
 	@git commit -m "Bump version to $(1)"
 	@git tag -a v$(1) -m "Version $(1)"
 	@echo "Version updated to $(1). Don't forget to push with: git push && git push --tags"

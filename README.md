@@ -220,6 +220,42 @@ Note: You'll need to set PyPI credentials via environment variables or command f
 * Token: `--token` or `UV_PUBLISH_TOKEN`
 * Or username/password: `--username`/`UV_PUBLISH_USERNAME` and `--password`/`UV_PUBLISH_PASSWORD`
 
+### Automatic PyPI Publishing with Tag Push
+
+This project is configured to automatically publish to PyPI when a tag is pushed to the repository. The publishing process is handled by a GitHub Actions workflow.
+
+To publish a new version:
+
+1. Update the version in `src/mcp_gsuite/__version__.py` and `pyproject.toml`
+2. Commit the changes
+3. Tag the commit with a version tag (e.g., `v0.4.2`)
+4. Push the tag to GitHub
+
+```bash
+# Example workflow to release a new version
+git add src/mcp_gsuite/__version__.py pyproject.toml
+git commit -m "Bump version to 0.4.2"
+git tag -a v0.4.2 -m "Version 0.4.2"
+git push && git push --tags
+```
+
+The GitHub Actions workflow will automatically build and publish the package to PyPI. Make sure to set the following secrets in your GitHub repository:
+
+* `PYPI_API_TOKEN`: Your PyPI API token
+
+You can also use the version bumping commands in the Makefile:
+
+```bash
+# Bump patch version (0.4.1 -> 0.4.2)
+make bump-patch
+
+# Bump minor version (0.4.1 -> 0.5.0)
+make bump-minor
+
+# Bump major version (0.4.1 -> 1.0.0)
+make bump-major
+```
+
 ### Debugging
 
 Since MCP servers run over stdio, debugging can be challenging. For the best debugging
