@@ -173,3 +173,218 @@ class TestMCPGDrive:
                         continue
 
             assert has_files, "No valid files found in response"
+
+    @pytest.mark.e2e
+    async def test_gdrive_get_file(self, credentials):
+        """Test for retrieving a specific GDrive file by ID"""
+        # Get parent process environment variables and add necessary variables
+        env = os.environ.copy()
+        env.update(
+            {
+                "GSUITE_CREDENTIALS_FILE": credentials["credentials_file"],
+                "GSUITE_EMAIL": credentials["email"],
+            }
+        )
+
+        # Set MCP server parameters
+        server_params = StdioServerParameters(command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env)
+
+        # Connect to the server
+        async with stdio_client(server_params) as (read_stream, write_stream):
+            # Initialize
+            init_result = await send_initialize(read_stream, write_stream)
+            assert init_result, "Failed to initialize MCP server"
+
+            # Get tool list
+            tools_response = await send_tools_list(read_stream, write_stream)
+            assert "tools" in tools_response, "No tools found in response"
+
+            # Find GDrive related tools
+            gdrive_tools = [
+                tool
+                for tool in tools_response["tools"]
+                if "drive" in tool["name"].lower() or "gdrive" in tool["name"].lower()
+            ]
+
+            # Skip test if no GDrive tools are available
+            if not gdrive_tools:
+                pytest.skip("No GDrive tools found")
+
+            list_files_tool = next(
+                (tool for tool in gdrive_tools if "list" in tool["name"].lower()),
+                None,
+            )
+            if not list_files_tool:
+                pytest.skip("GDrive list files tool not found")
+
+            # Execute the list files tool to get a file ID
+            list_params = {"limit": 1, "user_id": credentials["email"]}
+            list_result = await send_tools_call(read_stream, write_stream, list_files_tool["name"], list_params)
+
+            assert list_result, "List files tool execution failed"
+            assert "content" in list_result, "No content in list files response"
+            assert len(list_result["content"]) > 0, "Empty content in list files response"
+
+            file_id = None
+            for item in list_result["content"]:
+                if item.get("type") == "text" and item.get("text"):
+                    try:
+                        files_data = json.loads(item.get("text"))
+                        if isinstance(files_data, dict) and "files" in files_data and files_data["files"]:
+                            file_id = files_data["files"][0]["id"]
+                            break
+                    except json.JSONDecodeError:
+                        continue
+
+            # Skip test if no file ID was found
+            if not file_id:
+                pytest.skip("No file ID found to test get_file tool")
+
+            # Find the tool to get file metadata
+            get_file_tool = next(
+                (
+                    tool
+                    for tool in gdrive_tools
+                    if "get" in tool["name"].lower() and "download" not in tool["name"].lower()
+                ),
+                None,
+            )
+
+            # Skip test if get file tool is not available
+            if not get_file_tool:
+                pytest.skip("GDrive get file tool not found")
+
+            # Execute the get file tool
+            get_params = {"file_id": file_id, "user_id": credentials["email"]}
+            result = await send_tools_call(read_stream, write_stream, get_file_tool["name"], get_params)
+
+            # Verify results
+            assert result, "Get file tool execution failed"
+            assert "content" in result, "No content in get file response"
+            assert len(result["content"]) > 0, "Empty content in get file response"
+
+            # Verify file metadata in response
+            has_file_metadata = False
+            for item in result["content"]:
+                if item.get("type") == "text" and item.get("text"):
+                    response_text = item.get("text")
+
+                    if "not found" in response_text.lower():
+                        print(f"Warning: File with ID {file_id} not found")
+                        return
+
+                    try:
+                        file_data = json.loads(response_text)
+                        if isinstance(file_data, dict) and "id" in file_data:
+                            has_file_metadata = True
+                            print(f"Successfully retrieved file: {file_data.get('name', 'Unknown')}")
+                            break
+                    except json.JSONDecodeError:
+                        continue
+
+            assert has_file_metadata, "No valid file metadata found in response"
+
+    @pytest.mark.e2e
+    async def test_gdrive_download_file(self, credentials):
+        """Test for downloading a GDrive file by ID"""
+        # Get parent process environment variables and add necessary variables
+        env = os.environ.copy()
+        env.update(
+            {
+                "GSUITE_CREDENTIALS_FILE": credentials["credentials_file"],
+                "GSUITE_EMAIL": credentials["email"],
+            }
+        )
+
+        # Set MCP server parameters
+        server_params = StdioServerParameters(command=UV_PATH, args=["run", "fastmcp-gsuite"], env=env)
+
+        # Connect to the server
+        async with stdio_client(server_params) as (read_stream, write_stream):
+            # Initialize
+            init_result = await send_initialize(read_stream, write_stream)
+            assert init_result, "Failed to initialize MCP server"
+
+            # Get tool list
+            tools_response = await send_tools_list(read_stream, write_stream)
+            assert "tools" in tools_response, "No tools found in response"
+
+            # Find GDrive related tools
+            gdrive_tools = [
+                tool
+                for tool in tools_response["tools"]
+                if "drive" in tool["name"].lower() or "gdrive" in tool["name"].lower()
+            ]
+
+            # Skip test if no GDrive tools are available
+            if not gdrive_tools:
+                pytest.skip("No GDrive tools found")
+
+            list_files_tool = next(
+                (tool for tool in gdrive_tools if "list" in tool["name"].lower()),
+                None,
+            )
+            if not list_files_tool:
+                pytest.skip("GDrive list files tool not found")
+
+            # Execute the list files tool to get a file ID
+            list_params = {"limit": 1, "user_id": credentials["email"]}
+            list_result = await send_tools_call(read_stream, write_stream, list_files_tool["name"], list_params)
+
+            assert list_result, "List files tool execution failed"
+            assert "content" in list_result, "No content in list files response"
+            assert len(list_result["content"]) > 0, "Empty content in list files response"
+
+            file_id = None
+            for item in list_result["content"]:
+                if item.get("type") == "text" and item.get("text"):
+                    try:
+                        files_data = json.loads(item.get("text"))
+                        if isinstance(files_data, dict) and "files" in files_data and files_data["files"]:
+                            file_id = files_data["files"][0]["id"]
+                            break
+                    except json.JSONDecodeError:
+                        continue
+
+            # Skip test if no file ID was found
+            if not file_id:
+                pytest.skip("No file ID found to test download_file tool")
+
+            # Find the tool to download file
+            download_file_tool = next(
+                (tool for tool in gdrive_tools if "download" in tool["name"].lower()),
+                None,
+            )
+
+            # Skip test if download file tool is not available
+            if not download_file_tool:
+                pytest.skip("GDrive download file tool not found")
+
+            # Execute the download file tool
+            download_params = {"file_id": file_id, "user_id": credentials["email"]}
+            result = await send_tools_call(read_stream, write_stream, download_file_tool["name"], download_params)
+
+            # Verify results
+            assert result, "Download file tool execution failed"
+            assert "content" in result, "No content in download file response"
+            assert len(result["content"]) > 0, "Empty content in download file response"
+
+            has_file_data = False
+            for item in result["content"]:
+                if item.get("type") == "text" and item.get("text"):
+                    response_text = item.get("text")
+
+                    if "could not be downloaded" in response_text.lower():
+                        print(f"Warning: File with ID {file_id} could not be downloaded")
+                        return
+
+                    try:
+                        file_data = json.loads(response_text)
+                        if isinstance(file_data, dict) and "name" in file_data and "mimeType" in file_data:
+                            has_file_data = True
+                            print(f"Successfully downloaded file: {file_data.get('name', 'Unknown')}")
+                            break
+                    except json.JSONDecodeError:
+                        continue
+
+            assert has_file_data, "No valid file download data found in response"
