@@ -68,7 +68,7 @@ class TestGmailTools(unittest.TestCase):
             user_id=self.test_user_id,
             query="is:unread",
             max_results=10,
-            ctx=self.mock_context,
+            ctx=self.mock_context,  # type: ignore
         )
 
         self.assertEqual(len(result), 1)
@@ -92,7 +92,7 @@ class TestGmailTools(unittest.TestCase):
             user_id=self.test_user_id,
             query="is:unread",
             max_results=10,
-            ctx=self.mock_context,
+            ctx=self.mock_context,  # type: ignore
         )
 
         self.assertEqual(len(result), 1)
@@ -118,7 +118,7 @@ class TestGmailTools(unittest.TestCase):
         result = await get_email_details(
             user_id=self.test_user_id,
             email_id=self.test_email_id,
-            ctx=self.mock_context,
+            ctx=self.mock_context,  # type: ignore
         )
 
         self.assertEqual(len(result), 1)
@@ -150,7 +150,7 @@ class TestGmailTools(unittest.TestCase):
 
         result = await get_gmail_labels(
             user_id=self.test_user_id,
-            ctx=self.mock_context,
+            ctx=self.mock_context,  # type: ignore
         )
 
         self.assertEqual(len(result), 1)
@@ -176,7 +176,7 @@ class TestGmailTools(unittest.TestCase):
         result = await bulk_get_gmail_emails(
             user_id=self.test_user_id,
             email_ids=["email1", "email2"],
-            ctx=self.mock_context,
+            ctx=self.mock_context,  # type: ignore
         )
 
         self.assertEqual(len(result), 1)
@@ -212,7 +212,7 @@ class TestGmailTools(unittest.TestCase):
             subject="Test Subject",
             body="Test Body",
             cc=["cc@example.com"],
-            ctx=self.mock_context,
+            ctx=self.mock_context,  # type: ignore
         )
 
         self.assertEqual(len(result), 1)
@@ -240,7 +240,7 @@ class TestGmailTools(unittest.TestCase):
         result = await delete_gmail_draft(
             user_id=self.test_user_id,
             draft_id=self.test_draft_id,
-            ctx=self.mock_context,
+            ctx=self.mock_context,  # type: ignore
         )
 
         self.assertEqual(len(result), 1)
@@ -272,7 +272,7 @@ class TestGmailTools(unittest.TestCase):
             original_message_id=self.test_email_id,
             reply_body="Test Reply",
             send=False,
-            ctx=self.mock_context,
+            ctx=self.mock_context,  # type: ignore
         )
 
         self.assertEqual(len(result), 1)
@@ -304,7 +304,7 @@ class TestGmailTools(unittest.TestCase):
             user_id=self.test_user_id,
             message_id=self.test_email_id,
             attachment_id=self.test_attachment_id,
-            ctx=self.mock_context,
+            ctx=self.mock_context,  # type: ignore
         )
 
         self.assertEqual(len(result), 1)
@@ -338,7 +338,7 @@ class TestGmailTools(unittest.TestCase):
         result = await bulk_save_gmail_attachments(
             user_id=self.test_user_id,
             attachments=attachment_info,
-            ctx=self.mock_context,
+            ctx=self.mock_context,  # type: ignore
         )
 
         self.assertEqual(len(result), 1)

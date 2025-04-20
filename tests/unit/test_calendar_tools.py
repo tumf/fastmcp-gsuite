@@ -51,7 +51,7 @@ class TestCalendarTools(unittest.TestCase):
 
         result = await list_calendars(
             user_id=self.test_user_id,
-            ctx=self.mock_context,
+            ctx=self.mock_context,  # type: ignore
         )
 
         self.assertEqual(len(result), 1)
@@ -73,7 +73,7 @@ class TestCalendarTools(unittest.TestCase):
 
         result = await list_calendars(
             user_id=self.test_user_id,
-            ctx=self.mock_context,
+            ctx=self.mock_context,  # type: ignore
         )
 
         self.assertEqual(len(result), 1)
@@ -102,7 +102,7 @@ class TestCalendarTools(unittest.TestCase):
             start_time=start_time,
             end_time=end_time,
             max_results=10,
-            ctx=self.mock_context,
+            ctx=self.mock_context,  # type: ignore
         )
 
         self.assertEqual(len(result), 1)
@@ -139,7 +139,7 @@ class TestCalendarTools(unittest.TestCase):
             end_datetime=end_datetime,
             description="Test Description",
             location="Test Location",
-            ctx=self.mock_context,
+            ctx=self.mock_context,  # type: ignore
         )
 
         self.assertEqual(len(result), 1)
@@ -172,7 +172,7 @@ class TestCalendarTools(unittest.TestCase):
             user_id=self.test_user_id,
             calendar_id=self.test_calendar_id,
             event_id=self.test_event_id,
-            ctx=self.mock_context,
+            ctx=self.mock_context,  # type: ignore
         )
 
         self.assertEqual(len(result), 1)
