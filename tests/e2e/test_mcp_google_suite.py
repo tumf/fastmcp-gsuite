@@ -161,12 +161,20 @@ class TestMCPGoogleSuite:
         async with stdio_client(server_params) as (read_stream, write_stream):
             # Initialize with retry
             await retry_async(
-                initialize_mcp, read_stream, write_stream, max_attempts=3, expected_exceptions=CONNECTION_EXCEPTIONS
+                initialize_mcp,
+                read_stream,
+                write_stream,
+                max_attempts=3,
+                expected_exceptions=CONNECTION_EXCEPTIONS,
             )
 
             # Get a list of available tools with retry
             tools_response = await retry_async(
-                get_tool_list, read_stream, write_stream, max_attempts=3, expected_exceptions=CONNECTION_EXCEPTIONS
+                get_tool_list,
+                read_stream,
+                write_stream,
+                max_attempts=3,
+                expected_exceptions=CONNECTION_EXCEPTIONS,
             )
 
             # Check if Gmail-related tools are included
@@ -251,7 +259,11 @@ class TestMCPGoogleSuite:
         async with stdio_client(server_params) as (read_stream, write_stream):
             # Initialize with retry
             await retry_async(
-                initialize_mcp, read_stream, write_stream, max_attempts=3, expected_exceptions=CONNECTION_EXCEPTIONS
+                initialize_mcp,
+                read_stream,
+                write_stream,
+                max_attempts=3,
+                expected_exceptions=CONNECTION_EXCEPTIONS,
             )
 
             # Create test email subject and body
