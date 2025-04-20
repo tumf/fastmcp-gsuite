@@ -1,8 +1,7 @@
+import base64
 import json
 import os
-import re
 import traceback
-import base64
 
 import pytest
 from google.auth.transport.requests import Request
@@ -21,21 +20,19 @@ class TestGoogleAuth:
         self.google_client_secret = os.environ.get("GOOGLE_CLIENT_SECRET")
 
         # 認証情報が設定されていることを確認
-        assert (
-            credentials_json_str
-        ), "GSUITE_CREDENTIALS_JSON環境変数が設定されていません"
+        assert credentials_json_str, "GSUITE_CREDENTIALS_JSON環境変数が設定されていません"
         assert self.google_email, "GOOGLE_ACCOUNT_EMAIL環境変数が設定されていません"
         assert self.google_client_id, "GOOGLE_CLIENT_ID環境変数が設定されていません"
-        assert (
-            self.google_client_secret
-        ), "GOOGLE_CLIENT_SECRET環境変数が設定されていません"
+        assert self.google_client_secret, "GOOGLE_CLIENT_SECRET環境変数が設定されていません"
 
         # Base64エンコードされた認証情報をデコード
         try:
             # Base64デコード
-            credentials_json_decoded = base64.b64decode(credentials_json_str).decode('utf-8')
+            credentials_json_decoded = base64.b64decode(credentials_json_str).decode(
+                "utf-8"
+            )
             credentials_json = json.loads(credentials_json_decoded)
-        except Exception as e:
+        except Exception:
             # デコードに失敗した場合、直接JSONとして解析を試みる
             try:
                 credentials_json = json.loads(credentials_json_str)
@@ -55,7 +52,9 @@ class TestGoogleAuth:
                         refresh_token_match.group(1) if refresh_token_match else None
                     )
 
-                    token_match = re.search(r'token\\":\\"([^"\\]+)', credentials_json_str)
+                    token_match = re.search(
+                        r'token\\":\\"([^"\\]+)', credentials_json_str
+                    )
                     token = token_match.group(1) if token_match else None
 
                     credentials_json = {"refresh_token": refresh_token, "token": token}
@@ -80,9 +79,7 @@ class TestGoogleAuth:
         """GoogleのGmail APIを使用して認証とアクセストークンの取得をテスト"""
         # トークンリフレッシュが必要な場合に自動的に更新される
         if not self.credentials.token and self.credentials.refresh_token:
-            print(
-                "アクセストークンがないため、リフレッシュトークンを使用して更新を試みます"
-            )
+            print("アクセストークンがないため、リフレッシュトークンを使用して更新を試みます")
             try:
                 self.credentials.refresh(Request())
                 print(f"トークンの更新に成功しました: {self.credentials.token[:10]}...")
@@ -116,11 +113,7 @@ class TestGoogleAuth:
 
             print("Gmail APIでの認証確認に成功しました")
         except Exception as e:
-            print(
-                f"Gmail APIへのアクセスに失敗しました - 詳細エラー: {e.__class__.__name__}: {str(e)}"
-            )
+            print(f"Gmail APIへのアクセスに失敗しました - 詳細エラー: {e.__class__.__name__}: {str(e)}")
             print(traceback.format_exc())
-            pytest.skip(
-                f"Gmail APIへのアクセスに失敗しました: {e.__class__.__name__}: {str(e)}"
-            )
+            pytest.skip(f"Gmail APIへのアクセスに失敗しました: {e.__class__.__name__}: {str(e)}")
             return

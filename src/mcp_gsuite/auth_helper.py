@@ -1,13 +1,9 @@
 import logging
-import os
 
 from googleapiclient.discovery import build
-from oauth2client.client import \
-    OAuth2Credentials  # Keep for type hinting if needed, but rely on gauth functions
 
 from .gauth import get_account_info as original_get_account_info
-from .gauth import get_stored_credentials, get_user_info, store_credentials
-from .settings import settings
+from .gauth import get_stored_credentials
 
 logger = logging.getLogger(__name__)
 

@@ -7,10 +7,7 @@ import os
 import sys
 import urllib.parse
 
-from google.auth.exceptions import RefreshError
-from google.auth.transport.requests import Request
 # Use core google-auth components
-from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow  # Use base Flow for exchange
 
 logging.basicConfig(

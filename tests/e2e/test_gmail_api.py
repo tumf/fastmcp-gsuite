@@ -1,8 +1,8 @@
+import base64
 import json
 import os
 import random
 import string
-import base64
 from datetime import datetime
 
 import pytest
@@ -22,21 +22,19 @@ class TestGmailAPI:
         self.google_client_secret = os.environ.get("GOOGLE_CLIENT_SECRET")
 
         # 認証情報が設定されていることを確認
-        assert (
-            credentials_json_str
-        ), "GSUITE_CREDENTIALS_JSON環境変数が設定されていません"
+        assert credentials_json_str, "GSUITE_CREDENTIALS_JSON環境変数が設定されていません"
         assert self.google_email, "GOOGLE_ACCOUNT_EMAIL環境変数が設定されていません"
         assert self.google_client_id, "GOOGLE_CLIENT_ID環境変数が設定されていません"
-        assert (
-            self.google_client_secret
-        ), "GOOGLE_CLIENT_SECRET環境変数が設定されていません"
+        assert self.google_client_secret, "GOOGLE_CLIENT_SECRET環境変数が設定されていません"
 
         # Base64エンコードされた認証情報をデコード
         try:
             # Base64デコード
-            credentials_json_decoded = base64.b64decode(credentials_json_str).decode('utf-8')
+            credentials_json_decoded = base64.b64decode(credentials_json_str).decode(
+                "utf-8"
+            )
             credentials_json = json.loads(credentials_json_decoded)
-        except Exception as e:
+        except Exception:
             # デコードに失敗した場合、直接JSONとして解析を試みる
             try:
                 credentials_json = json.loads(credentials_json_str)
@@ -56,7 +54,9 @@ class TestGmailAPI:
                         refresh_token_match.group(1) if refresh_token_match else None
                     )
 
-                    token_match = re.search(r'token\\":\\"([^"\\]+)', credentials_json_str)
+                    token_match = re.search(
+                        r'token\\":\\"([^"\\]+)', credentials_json_str
+                    )
                     token = token_match.group(1) if token_match else None
 
                     credentials_json = {"refresh_token": refresh_token, "token": token}

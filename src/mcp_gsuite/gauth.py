@@ -4,7 +4,6 @@ import os
 
 import httplib2
 import pydantic
-from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 from oauth2client.client import (Credentials, FlowExchangeError,
                                  OAuth2Credentials, flow_from_clientsecrets)
@@ -36,7 +35,6 @@ SCOPES = [
 
 
 class AccountInfo(pydantic.BaseModel):
-
     email: str
     account_type: str
     extra_info: str
@@ -122,7 +120,6 @@ def get_stored_credentials(user_id: str) -> OAuth2Credentials | None:
     Stored oauth2client.client.OAuth2Credentials if found, None otherwise.
     """
     try:
-
         cred_file_path = _get_credential_filename(user_id=user_id)
         if not os.path.exists(cred_file_path):
             logging.warning(

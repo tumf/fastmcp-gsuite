@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Annotated, Any, Dict, List, Optional
+from typing import Annotated, List, Optional
 
 from fastmcp import Context, FastMCP
 from mcp.types import TextContent
@@ -177,9 +177,10 @@ async def bulk_get_gmail_emails(
             try:
                 if ctx:
                     await ctx.debug(f"Fetching email ID {email_id}")
-                email_details, attachments = (
-                    gmail_service.get_email_by_id_with_attachments(email_id=email_id)
-                )
+                (
+                    email_details,
+                    attachments,
+                ) = gmail_service.get_email_by_id_with_attachments(email_id=email_id)
                 if email_details:
                     full_details = {"email": email_details, "attachments": attachments}
                     results.append(full_details)

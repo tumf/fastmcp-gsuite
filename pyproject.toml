@@ -39,6 +39,7 @@ dev = [
     "google-auth-oauthlib>=1.2.1",
     "pytest-asyncio>=0.23.0",
     "fastmcp-gsuite[e2e]",
+    "types-pytz>=2025.2.0.20250326",
 ]
 
 e2e = [
@@ -54,7 +55,7 @@ dev = [
     "pyright>=1.1.389",
 ]
 e2e = [
-    "pytest>=8.3.5", 
+    "pytest>=8.3.5",
     "google-auth>=2.27.0",
     "google-api-python-client>=2.154.0",
     "google-auth-httplib2>=0.1.1",

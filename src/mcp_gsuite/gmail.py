@@ -4,10 +4,6 @@ import traceback
 from email.mime.text import MIMEText
 from typing import Tuple
 
-from googleapiclient.discovery import build
-
-from . import gauth
-
 
 class GmailService:
     def __init__(self, service):

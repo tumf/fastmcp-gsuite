@@ -63,7 +63,7 @@ Google Workspace (G Suite) APIs require OAuth2 authorization. Follow these steps
    - Add authorized redirect URIs (include `http://localhost:4100/code` for local development)
 
 2. Required OAuth2 Scopes:
-   
+
 
 ```json
    [
@@ -114,7 +114,7 @@ On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
 
 <details>
   <summary>Development/Unpublished Servers Configuration</summary>
-  
+
 
 ```json
 {
@@ -155,7 +155,7 @@ Note: Configuration is now primarily handled via environment variables or a `.en
 
 <details>
   <summary>Published Servers Configuration</summary>
-  
+
 
 ```json
 {
