@@ -1,21 +1,16 @@
 """Mock implementation of the Context class from fastmcp."""
 
-from typing import Any, TypeVar
-
-from fastmcp import Context
-
-T = TypeVar("T")
-U = TypeVar("U")
+from typing import Any
 
 
-class MockContext(Context[Any, Any]):
+class MockContext:
     """Mock implementation of the Context class from fastmcp."""
 
     def __init__(self):
-        self.info_messages = []
-        self.error_messages = []
-        self.warning_messages = []
-        self.debug_messages = []
+        self.info_messages: list[str] = []
+        self.error_messages: list[str] = []
+        self.warning_messages: list[str] = []
+        self.debug_messages: list[str] = []
 
     async def info(self, message: str, **extra: Any) -> None:
         """Record an info message."""
