@@ -1,6 +1,6 @@
 # fastmcp-gsuite MCP server (using fastmcp)
 
-[![codecov](https://codecov.io/gh/YOUR_GITHUB_USERNAME/fastmcp-gsuite/branch/main/graph/badge.svg)](https://codecov.io/gh/YOUR_GITHUB_USERNAME/fastmcp-gsuite)
+[![codecov](https://codecov.io/gh/tumf/fastmcp-gsuite/branch/main/graph/badge.svg)](https://codecov.io/gh/tumf/fastmcp-gsuite)
 
 MCP server to interact with Google products, rewritten using the `fastmcp` library.
 
