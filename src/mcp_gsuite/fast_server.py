@@ -19,6 +19,10 @@ from .drive_tools import (
     rename_drive_folder,
     upload_drive_file,
 )
+from .gmail_drive_tools import (
+    bulk_save_gmail_attachments_to_drive,
+    save_gmail_attachment_to_drive,
+)
 from .gmail_tools import (
     bulk_get_gmail_emails,
     bulk_save_gmail_attachments,
@@ -131,6 +135,13 @@ mcp.tool(description="Rename a folder in Google Drive.")(rename_drive_folder)
 mcp.tool(description="Move a folder to a different location in Google Drive.")(move_drive_folder)
 
 mcp.tool(description="Delete a folder from Google Drive.")(delete_drive_folder)
+
+# Register Gmail to Drive tools
+mcp.tool(description="Save a Gmail attachment to Google Drive.")(save_gmail_attachment_to_drive)
+
+mcp.tool(description="Save multiple Gmail attachments to Google Drive in a single request.")(
+    bulk_save_gmail_attachments_to_drive
+)
 
 if __name__ == "__main__":
     logging.basicConfig(

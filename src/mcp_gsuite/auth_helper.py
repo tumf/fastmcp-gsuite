@@ -59,16 +59,16 @@ def get_calendar_service(user_id: str):
     return get_authenticated_service("calendar", "v3", user_id, scopes=calendar_scopes)
 
 
-def get_account_info():
-    """Gets account information from the configured accounts file."""
-    return original_get_account_info()
-
-
 def get_drive_service(user_id: str):
-    """Helper to get an authenticated Drive service client."""
+    """Helper to get an authenticated Google Drive service client."""
     drive_scopes = [
-        "https://www.googleapis.com/auth/drive",  # Full access
+        "https://www.googleapis.com/auth/drive",  # Full access to Drive
         "https://www.googleapis.com/auth/userinfo.email",  # Needed for user info/verification
         "openid",
     ]
     return get_authenticated_service("drive", "v3", user_id, scopes=drive_scopes)
+
+
+def get_account_info():
+    """Gets account information from the configured accounts file."""
+    return original_get_account_info()
