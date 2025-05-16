@@ -4,6 +4,7 @@ from typing import Annotated
 
 from fastmcp import Context
 from mcp.types import TextContent
+from pydantic import Field
 
 from . import auth_helper
 from . import gmail as gmail_impl
@@ -14,15 +15,18 @@ logger = logging.getLogger(__name__)
 
 # Gmail related tools
 async def query_gmail_emails(
-    user_id: Annotated[str, get_user_id_description()],
+    user_id: Annotated[str, Field(description=get_user_id_description())],
     query: Annotated[
         str | None,
-        "Gmail search query (e.g., 'is:unread', 'from:example@gmail.com')",
+        Field(description="Gmail search query (e.g., 'is:unread', 'from:example@gmail.com')"),
     ] = None,
-    max_results: Annotated[int, "Maximum number of emails (1-500, default 100)"] = 100,
+    max_results: Annotated[
+        int,
+        Field(description="Maximum number of emails (1-500, default 100)", ge=1, le=500),
+    ] = 100,
     ctx: Context | None = None,  # Optional context
 ) -> list[TextContent]:
-    """Queries Gmail emails for the specified user."""
+    """Query Gmail emails by search and user."""
     try:
         if ctx:
             await ctx.info(f"Querying emails for {user_id} with query: '{query}'")
@@ -43,11 +47,11 @@ async def query_gmail_emails(
 
 
 async def get_email_details(
-    user_id: Annotated[str, get_user_id_description()],
-    email_id: Annotated[str, "The unique ID of the Gmail email message."],
+    user_id: Annotated[str, Field(description=get_user_id_description())],
+    email_id: Annotated[str, Field(description="The unique ID of the Gmail email message.")],
     ctx: Context | None = None,
 ) -> list[TextContent]:
-    """Retrieves detailed information for a single email, including body and attachments."""
+    """Get full details of a Gmail email by ID, including body and attachments."""
     try:
         if ctx:
             await ctx.info(f"Fetching details for email ID {email_id} for user {user_id}")
@@ -78,9 +82,9 @@ async def get_email_details(
 
 
 async def get_gmail_labels(
-    user_id: Annotated[str, get_user_id_description()], ctx: Context | None = None
+    user_id: Annotated[str, Field(description=get_user_id_description())], ctx: Context | None = None
 ) -> list[TextContent]:
-    """Lists all Gmail labels for the specified user."""
+    """List all Gmail labels for the specified user."""
     try:
         if ctx:
             await ctx.info(f"Fetching labels for user {user_id}")
@@ -101,11 +105,11 @@ async def get_gmail_labels(
 
 
 async def bulk_get_gmail_emails(
-    user_id: Annotated[str, get_user_id_description()],
-    email_ids: Annotated[list[str], "List of Gmail message IDs to retrieve."],
+    user_id: Annotated[str, Field(description=get_user_id_description())],
+    email_ids: Annotated[list[str], Field(description="List of Gmail message IDs to retrieve.")],
     ctx: Context | None = None,
 ) -> list[TextContent]:
-    """Retrieves details for multiple emails by their IDs."""
+    """Retrieve multiple Gmail emails by their IDs, including bodies and attachments."""
     results = []
     try:
         if ctx:
@@ -162,14 +166,14 @@ async def bulk_get_gmail_emails(
 
 
 async def create_gmail_draft(
-    user_id: Annotated[str, get_user_id_description()],
-    to: Annotated[str, "Email address of the recipient."],
-    subject: Annotated[str, "Subject line of the email."],
-    body: Annotated[str, "Body content of the email."],
-    cc: Annotated[list[str] | None, "Optional list of email addresses to CC."] = None,
+    user_id: Annotated[str, Field(description=get_user_id_description())],
+    to: Annotated[str, Field(description="Email address of the recipient.")],
+    subject: Annotated[str, Field(description="Subject line of the email.")],
+    body: Annotated[str, Field(description="Body content of the email.")],
+    cc: Annotated[list[str] | None, Field(description="Optional list of email addresses to CC.")] = None,
     ctx: Context | None = None,
 ) -> list[TextContent]:
-    """Creates a draft email in Gmail."""
+    """Create a Gmail draft specifying recipients, subject, body, and optional CC."""
     try:
         if ctx:
             await ctx.info(f"Creating draft email for user {user_id} with subject '{subject}'")
@@ -194,11 +198,11 @@ async def create_gmail_draft(
 
 
 async def delete_gmail_draft(
-    user_id: Annotated[str, get_user_id_description()],
-    draft_id: Annotated[str, "The unique ID of the draft to delete."],
+    user_id: Annotated[str, Field(description=get_user_id_description())],
+    draft_id: Annotated[str, Field(description="The unique ID of the draft to delete.")],
     ctx: Context | None = None,
 ) -> list[TextContent]:
-    """Deletes a draft email from Gmail."""
+    """Delete a Gmail draft by its unique ID."""
     try:
         if ctx:
             await ctx.info(f"Deleting draft email with ID {draft_id} for user {user_id}")
@@ -223,14 +227,14 @@ async def delete_gmail_draft(
 
 
 async def create_gmail_reply(
-    user_id: Annotated[str, get_user_id_description()],
-    original_message_id: Annotated[str, "The ID of the original email message to reply to."],
-    reply_body: Annotated[str, "The body text of the reply."],
-    send: Annotated[bool, "If True, sends the reply immediately. If False, saves as draft."] = False,
-    cc: Annotated[list[str] | None, "Optional list of email addresses to CC."] = None,
+    user_id: Annotated[str, Field(description=get_user_id_description())],
+    original_message_id: Annotated[str, Field(description="The ID of the original email message to reply to.")],
+    reply_body: Annotated[str, Field(description="The body text of the reply.")],
+    send: Annotated[bool, Field(description="If True, sends the reply immediately. If False, saves as draft.")] = False,
+    cc: Annotated[list[str] | None, Field(description="Optional list of email addresses to CC.")] = None,
     ctx: Context | None = None,
 ) -> list[TextContent]:
-    """Creates a reply to an existing Gmail email message."""
+    """Reply to a Gmail message, sending or saving as draft, with optional CC."""
     try:
         if ctx:
             await ctx.info(f"Creating reply to message ID {original_message_id} for user {user_id}")
@@ -270,12 +274,12 @@ async def create_gmail_reply(
 
 
 async def get_gmail_attachment(
-    user_id: Annotated[str, get_user_id_description()],
-    message_id: Annotated[str, "The ID of the Gmail message containing the attachment."],
-    attachment_id: Annotated[str, "The ID of the attachment to retrieve."],
+    user_id: Annotated[str, Field(description=get_user_id_description())],
+    message_id: Annotated[str, Field(description="The ID of the Gmail message containing the attachment.")],
+    attachment_id: Annotated[str, Field(description="The ID of the attachment to retrieve.")],
     ctx: Context | None = None,
 ) -> list[TextContent]:
-    """Retrieves an attachment from a Gmail message."""
+    """Retrieve an attachment from a Gmail message by message and attachment ID."""
     try:
         if ctx:
             await ctx.info(f"Retrieving attachment ID {attachment_id} from message ID {message_id} for user {user_id}")
@@ -298,15 +302,19 @@ async def get_gmail_attachment(
 
 
 async def bulk_save_gmail_attachments(
-    user_id: Annotated[str, get_user_id_description()],
+    user_id: Annotated[str, Field(description=get_user_id_description())],
     attachments: Annotated[
         list[dict],
-        "List of attachment information dictionaries. Each dictionary should have "
-        "message_id, attachment_id, and save_path.",
+        Field(
+            description=(
+                "List of attachment information dictionaries. "
+                "Each dictionary should have message_id, attachment_id, and save_path."
+            )
+        ),
     ],
     ctx: Context | None = None,
 ) -> list[TextContent]:
-    """Saves multiple Gmail attachments to disk."""
+    """Save multiple Gmail attachments to disk by message and attachment IDs."""
     try:
         if ctx:
             await ctx.info(f"Saving {len(attachments)} attachments for user {user_id}")

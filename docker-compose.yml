@@ -1,0 +1,13 @@
+services:
+  fastmcp-gsuite:
+    build: .
+    container_name: fastmcp-gsuite
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    restart: unless-stopped
+    volumes:
+      - ./.gauth.json:/app/.gauth.json
+      - ./.accounts.json:/app/.accounts.json
+      - ./credentials:/app/credentials

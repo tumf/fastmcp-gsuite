@@ -71,77 +71,42 @@ def get_user_id_description() -> str:
 
 
 # Register Gmail tools
-mcp.tool(
-    description="Query Gmail emails based on an optional search query. "
-    "Returns emails in reverse chronological order (newest first)."
-)(query_gmail_emails)
-
-mcp.tool(
-    description="Get the full details of a specific Gmail email by its ID, including body and attachment metadata."
-)(get_email_details)
-
-mcp.tool(description="List all available Gmail labels for the user.")(get_gmail_labels)
-
-mcp.tool(
-    description="Retrieves multiple Gmail email messages by their IDs in a single request, "
-    "including bodies and attachment metadata."
-)(bulk_get_gmail_emails)
-
-mcp.tool(description="Create a draft email in Gmail.")(create_gmail_draft)
-
-mcp.tool(description="Delete a draft email from Gmail.")(delete_gmail_draft)
-
-mcp.tool(description="Create a reply to an existing Gmail email message.")(create_gmail_reply)
-
-mcp.tool(description="Retrieve a Gmail attachment by its ID.")(get_gmail_attachment)
-
-mcp.tool(
-    description="Save multiple Gmail attachments to disk by their message IDs and attachment IDs in a single request."
-)(bulk_save_gmail_attachments)
+mcp.tool()(query_gmail_emails)
+mcp.tool()(get_email_details)
+mcp.tool()(get_gmail_labels)
+mcp.tool()(bulk_get_gmail_emails)
+mcp.tool()(create_gmail_draft)
+mcp.tool()(delete_gmail_draft)
+mcp.tool()(create_gmail_reply)
+mcp.tool()(get_gmail_attachment)
+mcp.tool()(bulk_save_gmail_attachments)
 
 # Register Calendar tools
-mcp.tool(description="List all calendars the user has access to.")(list_calendars)
-
-mcp.tool(description="List events from a specific calendar within a given time range.")(list_calendar_events)
-
-mcp.tool(description="Create a new event in a specified calendar.")(create_calendar_event)
-
-mcp.tool(description="Delete an event from a calendar.")(delete_calendar_event)
+mcp.tool()(list_calendars)
+mcp.tool()(list_calendar_events)
+mcp.tool()(create_calendar_event)
+mcp.tool()(delete_calendar_event)
 
 # Register Drive tools
-mcp.tool(description="List files in the user's Google Drive with optional filtering by search query.")(list_drive_files)
-
-mcp.tool(description="Get metadata for a specific Google Drive file by its ID.")(get_drive_file)
-
-mcp.tool(description="Download the content of a Google Drive file by its ID.")(download_drive_file)
-
-mcp.tool(description="Upload a file to Google Drive.")(upload_drive_file)
-
-mcp.tool(description="Create a copy of a file in Google Drive.")(copy_drive_file)
-
-mcp.tool(description="Delete a file from Google Drive.")(delete_drive_file)
-
-mcp.tool(description="Rename a file in Google Drive.")(rename_drive_file)
-
-mcp.tool(description="Move a file to a different folder in Google Drive.")(move_drive_file)
+mcp.tool()(list_drive_files)
+mcp.tool()(get_drive_file)
+mcp.tool()(download_drive_file)
+mcp.tool()(upload_drive_file)
+mcp.tool()(copy_drive_file)
+mcp.tool()(delete_drive_file)
+mcp.tool()(rename_drive_file)
+mcp.tool()(move_drive_file)
 
 # Register Drive folder tools
-mcp.tool(description="Create a new folder in Google Drive.")(create_drive_folder)
-
-mcp.tool(description="List folders in the user's Google Drive with optional filtering.")(list_drive_folders)
-
-mcp.tool(description="Rename a folder in Google Drive.")(rename_drive_folder)
-
-mcp.tool(description="Move a folder to a different location in Google Drive.")(move_drive_folder)
-
-mcp.tool(description="Delete a folder from Google Drive.")(delete_drive_folder)
+mcp.tool()(create_drive_folder)
+mcp.tool()(list_drive_folders)
+mcp.tool()(rename_drive_folder)
+mcp.tool()(move_drive_folder)
+mcp.tool()(delete_drive_folder)
 
 # Register Gmail to Drive tools
-mcp.tool(description="Save a Gmail attachment to Google Drive.")(save_gmail_attachment_to_drive)
-
-mcp.tool(description="Save multiple Gmail attachments to Google Drive in a single request.")(
-    bulk_save_gmail_attachments_to_drive
-)
+mcp.tool()(save_gmail_attachment_to_drive)
+mcp.tool()(bulk_save_gmail_attachments_to_drive)
 
 
 def run_streamable_http():

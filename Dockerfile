@@ -32,7 +32,7 @@ COPY --from=uv --chown=app:app /app/.venv /app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
 
 # Expose necessary ports
-EXPOSE 4100
+EXPOSE 8000
 
 # Specify the entrypoint command
-ENTRYPOINT ["uv", "run", "mcp-gsuite"]
+ENTRYPOINT ["fastmcp-gsuite-streamablehttp"]

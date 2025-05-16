@@ -122,6 +122,8 @@ def get_refresh_token_manual_url():
             "access_token": credentials.token,
             "token_expiry": (credentials.expiry.isoformat() if credentials.expiry else None),
             # google-auth might have other fields like id_token, token_uri
+            "user_agent": "fastmcp-gsuite",  # UAをfastmcp-gsuiteに変更
+            "invalid": False,    # Add invalid key (False by default)
         }
 
         os.makedirs(CREDENTIALS_DIR, exist_ok=True)

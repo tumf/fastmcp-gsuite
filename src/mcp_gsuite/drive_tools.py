@@ -5,6 +5,7 @@ from typing import Annotated
 
 from fastmcp import Context
 from mcp.types import TextContent
+from pydantic import Field
 
 from . import auth_helper
 from .common import get_user_id_description
@@ -16,19 +17,18 @@ FOLDER_MIME_TYPE = "application/vnd.google-apps.folder"
 
 
 async def list_drive_files(
-    user_id: Annotated[str, get_user_id_description()],
+    user_id: Annotated[str, Field(description=get_user_id_description())],
     query: Annotated[
         str | None,
-        "Drive search query (e.g., 'name contains \"report\"', 'mimeType=\"application/pdf\"')",
+        Field(description="Drive search query (e.g., 'name contains \"report\"', 'mimeType=\"application/pdf\"')"),
     ] = None,
-    limit: Annotated[int, "Maximum number of files (1-1000, default 100)"] = 100,
+    limit: Annotated[int, Field(description="Maximum number of files (1-1000, default 100)")] = 100,
     order_by: Annotated[
-        str | None,
-        "Sort order (e.g., 'name', 'modifiedTime desc') - default is 'modifiedTime desc'",
+        str | None, Field(description="Sort order (e.g., 'name', 'modifiedTime desc') - default is 'modifiedTime desc'")
     ] = None,
     ctx: Context | None = None,  # Optional context
 ) -> list[TextContent]:
-    """Lists files in the user's Google Drive."""
+    """List files in Google Drive, optionally filtered by a search query."""
     try:
         if ctx:
             await ctx.info(f"Listing files for {user_id} with query: '{query}'")
@@ -51,11 +51,11 @@ async def list_drive_files(
 
 
 async def get_drive_file(
-    user_id: Annotated[str, get_user_id_description()],
-    file_id: Annotated[str, "The unique ID of the Google Drive file."],
+    user_id: Annotated[str, Field(description=get_user_id_description())],
+    file_id: Annotated[str, Field(description="The unique ID of the Google Drive file.")],
     ctx: Context | None = None,
 ) -> list[TextContent]:
-    """Retrieves metadata for a specific Google Drive file."""
+    """Get metadata for a Google Drive file by its ID."""
     try:
         if ctx:
             await ctx.info(f"Fetching file ID {file_id} for user {user_id}")
@@ -78,11 +78,11 @@ async def get_drive_file(
 
 
 async def download_drive_file(
-    user_id: Annotated[str, get_user_id_description()],
-    file_id: Annotated[str, "The unique ID of the Google Drive file to download."],
+    user_id: Annotated[str, Field(description=get_user_id_description())],
+    file_id: Annotated[str, Field(description="The unique ID of the Google Drive file to download.")],
     ctx: Context | None = None,
 ) -> list[TextContent]:
-    """Downloads the content of a Google Drive file."""
+    """Download the content of a Google Drive file by its ID."""
     try:
         if ctx:
             await ctx.info(f"Downloading file ID {file_id} for user {user_id}")
@@ -121,17 +121,19 @@ async def download_drive_file(
 
 
 async def upload_drive_file(
-    user_id: Annotated[str, get_user_id_description()],
-    file_path: Annotated[str, "Local path to the file to upload."],
+    user_id: Annotated[str, Field(description=get_user_id_description())],
+    file_path: Annotated[str, Field(description="Local path to the file to upload.")],
     parent_folder_id: Annotated[
-        str | None, "ID of the parent folder. If not specified, file will be uploaded to the Drive root."
+        str | None,
+        Field(description=("ID of the parent folder. If not specified, file will be uploaded to the Drive root.")),
     ] = None,
     mime_type: Annotated[
-        str | None, "MIME type of the file. If not specified, it will be guessed from the file extension."
+        str | None,
+        Field(description="MIME type of the file. If not specified, it will be guessed from the file extension."),
     ] = None,
     ctx: Context | None = None,
 ) -> list[TextContent]:
-    """Uploads a file to Google Drive."""
+    """Upload a file to Google Drive, specifying path and destination folder."""
     try:
         if ctx:
             await ctx.info(f"Uploading file {file_path} for user {user_id}")
@@ -165,18 +167,23 @@ async def upload_drive_file(
 
 
 async def copy_drive_file(
-    user_id: Annotated[str, get_user_id_description()],
-    file_id: Annotated[str, "ID of the file to copy."],
+    user_id: Annotated[str, Field(description=get_user_id_description())],
+    file_id: Annotated[str, Field(description="ID of the file to copy.")],
     new_name: Annotated[
-        str | None, "New name for the copied file. If not specified, the original name will be used."
+        str | None, Field(description="New name for the copied file. If not specified, the original name will be used.")
     ] = None,
     parent_folder_id: Annotated[
         str | None,
-        "ID of the parent folder for the copy. If not specified, the copy will be in the same folder as the original.",
+        Field(
+            description=(
+                "ID of the parent folder for the copy. "
+                "If not specified, the copy will be in the same folder as the original."
+            ),
+        ),
     ] = None,
     ctx: Context | None = None,
 ) -> list[TextContent]:
-    """Creates a copy of a file in Google Drive."""
+    """Create a copy of a file in Google Drive."""
     try:
         if ctx:
             await ctx.info(f"Copying file {file_id} for user {user_id}")
@@ -201,11 +208,11 @@ async def copy_drive_file(
 
 
 async def delete_drive_file(
-    user_id: Annotated[str, get_user_id_description()],
-    file_id: Annotated[str, "ID of the file to delete."],
+    user_id: Annotated[str, Field(description=get_user_id_description())],
+    file_id: Annotated[str, Field(description="ID of the file to delete.")],
     ctx: Context | None = None,
 ) -> list[TextContent]:
-    """Deletes a file from Google Drive."""
+    """Delete a file from Google Drive by its ID."""
     try:
         if ctx:
             await ctx.info(f"Deleting file {file_id} for user {user_id}")
@@ -230,12 +237,12 @@ async def delete_drive_file(
 
 
 async def rename_drive_file(
-    user_id: Annotated[str, get_user_id_description()],
-    file_id: Annotated[str, "ID of the file to rename."],
-    new_name: Annotated[str, "New name for the file."],
+    user_id: Annotated[str, Field(description=get_user_id_description())],
+    file_id: Annotated[str, Field(description="ID of the file to rename.")],
+    new_name: Annotated[str, Field(description="New name for the file.")],
     ctx: Context | None = None,
 ) -> list[TextContent]:
-    """Renames a file in Google Drive."""
+    """Rename a file in Google Drive by its ID."""
     try:
         if ctx:
             await ctx.info(f"Renaming file {file_id} to {new_name} for user {user_id}")
@@ -260,15 +267,20 @@ async def rename_drive_file(
 
 
 async def move_drive_file(
-    user_id: Annotated[str, get_user_id_description()],
-    file_id: Annotated[str, "ID of the file to move."],
-    new_parent_id: Annotated[str, "ID of the destination folder."],
+    user_id: Annotated[str, Field(description=get_user_id_description())],
+    file_id: Annotated[str, Field(description="ID of the file to move.")],
+    new_parent_id: Annotated[str, Field(description="ID of the destination folder.")],
     remove_previous_parents: Annotated[
-        bool, "Whether to remove the file from its current folders. If False, the file will be in multiple folders."
+        bool,
+        Field(
+            description=(
+                "Whether to remove the file from its current folders. If False, the file will be in multiple folders."
+            ),
+        ),
     ] = True,
     ctx: Context | None = None,
 ) -> list[TextContent]:
-    """Moves a file to a different folder in Google Drive."""
+    """Move a file to another folder in Google Drive."""
     try:
         if ctx:
             await ctx.info(f"Moving file {file_id} to folder {new_parent_id} for user {user_id}")
@@ -295,14 +307,15 @@ async def move_drive_file(
 
 
 async def create_drive_folder(
-    user_id: Annotated[str, get_user_id_description()],
-    folder_name: Annotated[str, "Name of the folder to create."],
+    user_id: Annotated[str, Field(description=get_user_id_description())],
+    folder_name: Annotated[str, Field(description="Name of the folder to create.")],
     parent_folder_id: Annotated[
-        str | None, "ID of the parent folder. If not specified, folder will be created in the Drive root."
+        str | None,
+        Field(description="ID of the parent folder. If not specified, folder will be created in the Drive root."),
     ] = None,
     ctx: Context | None = None,
 ) -> list[TextContent]:
-    """Creates a new folder in Google Drive."""
+    """Create a new folder in Google Drive."""
     try:
         if ctx:
             await ctx.info(f"Creating folder '{folder_name}' for user {user_id}")
@@ -331,15 +344,15 @@ async def create_drive_folder(
 
 
 async def list_drive_folders(
-    user_id: Annotated[str, get_user_id_description()],
+    user_id: Annotated[str, Field(description=get_user_id_description())],
     query: Annotated[
         str | None,
-        "Additional search query to combine with folder filter (e.g., 'name contains \"reports\"')",
+        Field(description="Additional search query to combine with folder filter (e.g., 'name contains \"reports\"')"),
     ] = None,
-    limit: Annotated[int, "Maximum number of folders (1-1000, default 100)"] = 100,
+    limit: Annotated[int, Field(description="Maximum number of folders (1-1000, default 100)")] = 100,
     ctx: Context | None = None,
 ) -> list[TextContent]:
-    """Lists folders in the user's Google Drive."""
+    """List folders in Google Drive, optionally filtered."""
     try:
         folder_query = f"mimeType='{FOLDER_MIME_TYPE}'"
         if query:
@@ -367,12 +380,12 @@ async def list_drive_folders(
 
 
 async def rename_drive_folder(
-    user_id: Annotated[str, get_user_id_description()],
-    folder_id: Annotated[str, "ID of the folder to rename."],
-    new_name: Annotated[str, "New name for the folder."],
+    user_id: Annotated[str, Field(description=get_user_id_description())],
+    folder_id: Annotated[str, Field(description="ID of the folder to rename.")],
+    new_name: Annotated[str, Field(description="New name for the folder.")],
     ctx: Context | None = None,
 ) -> list[TextContent]:
-    """Renames a folder in Google Drive."""
+    """Rename a folder in Google Drive by its ID."""
     try:
         if ctx:
             await ctx.info(f"Renaming folder {folder_id} to {new_name} for user {user_id}")
@@ -406,16 +419,21 @@ async def rename_drive_folder(
 
 
 async def move_drive_folder(
-    user_id: Annotated[str, get_user_id_description()],
-    folder_id: Annotated[str, "ID of the folder to move."],
-    new_parent_id: Annotated[str, "ID of the destination folder."],
+    user_id: Annotated[str, Field(description=get_user_id_description())],
+    folder_id: Annotated[str, Field(description="ID of the folder to move.")],
+    new_parent_id: Annotated[str, Field(description="ID of the destination folder.")],
     remove_previous_parents: Annotated[
         bool,
-        "Whether to remove the folder from its current parent. If False, the folder will be in multiple locations.",
+        Field(
+            description=(
+                "Whether to remove the folder from its current parent. "
+                "If False, the folder will be in multiple locations."
+            ),
+        ),
     ] = True,
     ctx: Context | None = None,
 ) -> list[TextContent]:
-    """Moves a folder to a different location in Google Drive."""
+    """Move a folder to another location in Google Drive."""
     try:
         if ctx:
             await ctx.info(f"Moving folder {folder_id} to folder {new_parent_id} for user {user_id}")
@@ -464,11 +482,11 @@ async def move_drive_folder(
 
 
 async def delete_drive_folder(
-    user_id: Annotated[str, get_user_id_description()],
-    folder_id: Annotated[str, "ID of the folder to delete."],
+    user_id: Annotated[str, Field(description=get_user_id_description())],
+    folder_id: Annotated[str, Field(description="ID of the folder to delete.")],
     ctx: Context | None = None,
 ) -> list[TextContent]:
-    """Deletes a folder from Google Drive."""
+    """Delete a folder from Google Drive by its ID."""
     try:
         if ctx:
             await ctx.info(f"Deleting folder {folder_id} for user {user_id}")
