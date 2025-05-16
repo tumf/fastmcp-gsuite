@@ -143,6 +143,22 @@ mcp.tool(description="Save multiple Gmail attachments to Google Drive in a singl
     bulk_save_gmail_attachments_to_drive
 )
 
+
+def run_streamable_http():
+    """Run the server in streamable-http mode."""
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    )
+    logger.info("Starting mcp-gsuite-fast server (streamable-http mode)...")
+    mcp.run(
+        transport="streamable-http",
+        host="0.0.0.0",
+        port=8000,
+        path="/mcp",
+    )
+
+
 if __name__ == "__main__":
     logging.basicConfig(
         level=logging.INFO,

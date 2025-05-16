@@ -7,6 +7,8 @@ import os
 import sys
 import urllib.parse
 
+from dotenv import load_dotenv
+
 # Use core google-auth components
 from google_auth_oauthlib.flow import Flow  # Use base Flow for exchange
 
@@ -23,6 +25,7 @@ SCOPES = [
 ]
 
 # Get required environment variables directly, without dotenv
+load_dotenv()  # Load environment variables from .env file if it exists
 USER_ID = os.environ.get("GOOGLE_ACCOUNT_EMAIL")  # The email to authorize
 CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
 CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
