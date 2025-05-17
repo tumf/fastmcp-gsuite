@@ -13,7 +13,7 @@ dependencies = [
  "python-dotenv>=1.0.1",
  "pytz>=2024.2",
  "requests>=2.32.3",
- "fastmcp>=2.1.2,<2.2.0",
+ "fastmcp>=2.3.4", # バージョンを2.3.4以上に引き上げ
  "pydantic-settings>=2.8.1,<2.9.0",
  "detect-secrets>=1.5.0",
  "types-httplib2>=0.22.0.20250401",
@@ -72,6 +72,7 @@ e2e = [
 # mcp-gsuite = "mcp_gsuite:main" # Old entry point
 fastmcp-gsuite-fast = "mcp_gsuite.fast_server:mcp.run" # New entry point using fastmcp
 fastmcp-gsuite = "mcp_gsuite.fast_server:mcp.run" # Alias for fastmcp implementation
+fastmcp-gsuite-streamablehttp = "mcp_gsuite.fast_server:run_streamable_http" # Alias for fastmcp implementation
 
 # Add pytest configuration to include project root in pythonpath
 [tool.pytest.ini_options]

@@ -4,6 +4,7 @@ from typing import Annotated
 
 from fastmcp import Context
 from mcp.types import TextContent
+from pydantic import Field
 
 from . import auth_helper
 from . import calendar as calendar_impl
@@ -14,9 +15,9 @@ logger = logging.getLogger(__name__)
 
 # Calendar related tools
 async def list_calendars(
-    user_id: Annotated[str, get_user_id_description()], ctx: Context | None = None
+    user_id: Annotated[str, Field(description=get_user_id_description())], ctx: Context | None = None
 ) -> list[TextContent]:
-    """Lists all calendars accessible by the user."""
+    """List all calendars accessible by the user."""
     try:
         if ctx:
             await ctx.info(f"Listing calendars for user {user_id}")
@@ -37,15 +38,24 @@ async def list_calendars(
 
 
 async def list_calendar_events(
-    user_id: Annotated[str, get_user_id_description()],
-    calendar_id: Annotated[str, "The ID of the calendar to query (use 'primary' for the primary calendar)."],
-    start_time: Annotated[str, "Start time in ISO 8601 format (e.g., '2024-04-15T00:00:00Z')."],
-    end_time: Annotated[str, "End time in ISO 8601 format (e.g., '2024-04-16T00:00:00Z')."],
-    max_results: Annotated[int, "Maximum number of events (1-2500, default 100)"] = 100,
-    query: Annotated[str | None, "Optional text query to filter events."] = None,
+    user_id: Annotated[str, Field(description=get_user_id_description())],
+    calendar_id: Annotated[
+        str,
+        Field(description=("The ID of the calendar to query (use 'primary' for the primary calendar).")),
+    ],
+    start_time: Annotated[
+        str,
+        Field(description="Start time in ISO 8601 format (e.g., '2024-04-15T00:00:00Z')."),
+    ],
+    end_time: Annotated[
+        str,
+        Field(description="End time in ISO 8601 format (e.g., '2024-04-16T00:00:00Z')."),
+    ],
+    max_results: Annotated[int, Field(description="Maximum number of events (1-2500, default 100)")] = 100,
+    query: Annotated[str | None, Field(description="Optional text query to filter events.")] = None,
     ctx: Context | None = None,
 ) -> list[TextContent]:
-    """Lists events from a specified calendar and time range."""
+    """List events from a calendar within a given time range."""
     try:
         if ctx:
             await ctx.info(f"Listing events for {user_id} in calendar {calendar_id} from {start_time} to {end_time}")
@@ -72,26 +82,32 @@ async def list_calendar_events(
 
 
 async def create_calendar_event(
-    user_id: Annotated[str, get_user_id_description()],
+    user_id: Annotated[str, Field(description=get_user_id_description())],
     calendar_id: Annotated[
         str,
-        "The ID of the calendar to add the event to (use 'primary' for the primary calendar).",
+        Field(description="The ID of the calendar to add the event to (use 'primary' for the primary calendar)."),
     ],
-    summary: Annotated[str, "The title or summary of the event."],
+    summary: Annotated[str, Field(description="The title or summary of the event.")],
     start_datetime: Annotated[
         str,
-        "Start date/time in ISO 8601 format (e.g., '2024-04-15T10:00:00Z' or '2024-04-15' for all-day).",
+        Field(
+            description=(
+                "Start date/time in ISO 8601 format (e.g., '2024-04-15T10:00:00Z' or '2024-04-15' for all-day)."
+            )
+        ),
     ],
     end_datetime: Annotated[
         str,
-        "End date/time in ISO 8601 format (e.g., '2024-04-15T11:00:00Z' or '2024-04-16' for all-day).",
+        Field(
+            description=("End date/time in ISO 8601 format (e.g., '2024-04-15T11:00:00Z' or '2024-04-16' for all-day).")
+        ),
     ],
-    description: Annotated[str | None, "Optional description or details for the event."] = None,
-    location: Annotated[str | None, "Optional location for the event."] = None,
-    attendees: Annotated[list[str] | None, "Optional list of attendee email addresses."] = None,
+    description: Annotated[str | None, Field(description="Optional description or details for the event.")] = None,
+    location: Annotated[str | None, Field(description="Optional location for the event.")] = None,
+    attendees: Annotated[list[str] | None, Field(description="Optional list of attendee email addresses.")] = None,
     ctx: Context | None = None,
 ) -> list[TextContent]:
-    """Creates a new calendar event."""
+    """Create a new event in the selected calendar."""
     try:
         if ctx:
             await ctx.info(f"Creating event '{summary}' for {user_id} in calendar {calendar_id}")
@@ -131,15 +147,15 @@ async def create_calendar_event(
 
 
 async def delete_calendar_event(
-    user_id: Annotated[str, get_user_id_description()],
+    user_id: Annotated[str, Field(description=get_user_id_description())],
     calendar_id: Annotated[
         str,
-        "The ID of the calendar containing the event (use 'primary' for the primary calendar).",
+        Field(description="The ID of the calendar containing the event (use 'primary' for the primary calendar)."),
     ],
-    event_id: Annotated[str, "The unique ID of the event to delete."],
+    event_id: Annotated[str, Field(description="The unique ID of the event to delete.")],
     ctx: Context | None = None,
 ) -> list[TextContent]:
-    """Deletes a calendar event."""
+    """Delete an event from the specified calendar."""
     try:
         if ctx:
             await ctx.info(f"Deleting event ID {event_id} for {user_id} from calendar {calendar_id}")
