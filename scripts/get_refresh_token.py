@@ -1,9 +1,11 @@
 # scripts/get_refresh_token.py
 import argparse
 import base64
+import hashlib
 import json
 import logging
 import os
+import secrets
 import sys
 import urllib.parse
 
@@ -50,7 +52,13 @@ def get_refresh_token_manual_url():
         print(f"Please set the following environment variables: {', '.join(missing_vars)}")
         sys.exit(1)
 
-    # --- Step 1: Manually construct the Authorization URL ---
+    # --- Step 1: Manually construct the Authorization URL with PKCE ---
+    code_verifier = secrets.token_urlsafe(64)
+    code_challenge_digest = hashlib.sha256(code_verifier.encode()).digest()
+    code_challenge = base64.urlsafe_b64encode(code_challenge_digest).decode().rstrip("=")
+
+    state = secrets.token_urlsafe(32)
+
     auth_params = {
         "client_id": CLIENT_ID,
         "redirect_uri": REDIRECT_URI_OOB,
@@ -59,7 +67,9 @@ def get_refresh_token_manual_url():
         "access_type": "offline",  # Request refresh token
         "prompt": "consent",  # Force consent screen for refresh token
         "login_hint": USER_ID,
-        # 'state': 'some_random_state_string' # Optional: for CSRF protection if needed
+        "code_challenge": code_challenge,
+        "code_challenge_method": "S256",
+        "state": state,  # Include state for CSRF protection
     }
     encoded_params = urllib.parse.urlencode(auth_params)
     auth_uri = "https://accounts.google.com/o/oauth2/auth"
@@ -92,10 +102,10 @@ def get_refresh_token_manual_url():
             redirect_uri=REDIRECT_URI_OOB,  # Must match the URI used in the auth request
         )
 
-        # Exchange the authorization code for credentials
-        flow.fetch_token(code=auth_code)
+        # Exchange the authorization code for credentials with PKCE
+        flow.fetch_token(code=auth_code, code_verifier=code_verifier)
         credentials = flow.credentials  # google.oauth2.credentials.Credentials object
-        logging.info("Successfully exchanged code for tokens.")
+        logging.info("Successfully exchanged code for tokens using PKCE.")
 
         if not credentials.refresh_token:
             logging.warning("NO REFRESH TOKEN obtained. Check settings or previous grants.")

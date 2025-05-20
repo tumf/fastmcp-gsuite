@@ -9,7 +9,10 @@ dependencies = [
  "google-api-python-client>=2.154.0",
  "httplib2>=0.22.0",
  # "mcp>=1.3.0", # Now included via fastmcp
- "oauth2client==4.1.3",
+ # "oauth2client==4.1.3", # Replaced with google-auth libraries
+ "google-auth>=2.27.0",
+ "google-auth-oauthlib>=1.2.1",
+ "google-auth-httplib2>=0.1.1",
  "python-dotenv>=1.0.1",
  "pytz>=2024.2",
  "requests>=2.32.3",
