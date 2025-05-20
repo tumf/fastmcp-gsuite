@@ -86,8 +86,7 @@ class OAuth2Handler(BaseHTTPRequestHandler):
                     self.end_headers()
                     self.wfile.write(b"Authentication successful! You can close this window.")
 
-                    if state in code_verifiers:
-                        del code_verifiers[state]
+                    code_verifiers.pop(state, None)
 
                 except Exception as e:
                     logging.error(f"Error exchanging code: {e}")
