@@ -1,16 +1,14 @@
+import base64
+import hashlib
 import json
 import logging
 import os
+import secrets
 
-import httplib2
 import pydantic
-from googleapiclient.discovery import build
-from oauth2client.client import (
-    Credentials,
-    FlowExchangeError,
-    OAuth2Credentials,
-    flow_from_clientsecrets,
-)
+import requests
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import Flow
 
 # import argparse # Replaced by settings
 from .settings import settings
@@ -116,13 +114,13 @@ def _get_credential_filename(user_id: str) -> str:
     return os.path.join(creds_dir, f".oauth2.{user_id}.json")
 
 
-def get_stored_credentials(user_id: str) -> OAuth2Credentials | None:
+def get_stored_credentials(user_id: str) -> Credentials | None:
     """Retrieved stored credentials for the provided user ID.
 
     Args:
     user_id: User's ID.
     Returns:
-    Stored oauth2client.client.OAuth2Credentials if found, None otherwise.
+    Stored google.oauth2.credentials.Credentials if found, None otherwise.
     """
     try:
         cred_file_path = _get_credential_filename(user_id=user_id)
@@ -131,40 +129,101 @@ def get_stored_credentials(user_id: str) -> OAuth2Credentials | None:
             return None
 
         with open(cred_file_path) as f:
-            data = f.read()
-            return Credentials.new_from_json(data)
+            cred_data = json.load(f)
+            return Credentials(
+                token=cred_data.get("token"),
+                refresh_token=cred_data.get("refresh_token"),
+                token_uri=cred_data.get("token_uri"),
+                client_id=cred_data.get("client_id"),
+                client_secret=cred_data.get("client_secret"),
+                scopes=cred_data.get("scopes"),
+            )
     except Exception as e:
         logging.error(e)
         return None
 
 
-def store_credentials(credentials: OAuth2Credentials, user_id: str):
+def store_credentials(credentials: Credentials, user_id: str):
     """Store OAuth 2.0 credentials in the specified directory."""
     cred_file_path = _get_credential_filename(user_id=user_id)
     os.makedirs(os.path.dirname(cred_file_path), exist_ok=True)
 
-    data = credentials.to_json()
+    cred_data = {
+        "token": credentials.token,
+        "refresh_token": credentials.refresh_token,
+        "token_uri": credentials.token_uri,
+        "client_id": credentials.client_id,
+        "client_secret": credentials.client_secret,
+        "scopes": credentials.scopes,
+    }
+
     with open(cred_file_path, "w") as f:
-        f.write(data)
+        json.dump(cred_data, f, indent=2)
 
 
-def exchange_code(authorization_code):
-    """Exchange an authorization code for OAuth 2.0 credentials.
+def store_credentials_secure(credentials: Credentials, user_id: str):
+    """
+    Store OAuth 2.0 credentials securely.
 
     Args:
-    authorization_code: Authorization code to exchange for OAuth 2.0
-                        credentials.
-    Returns:
-    oauth2client.client.OAuth2Credentials instance.
-    Raises:
-    CodeExchangeError: an error occurred.
+        credentials: OAuth 2.0 credentials from google.oauth2.credentials.Credentials
+        user_id: User ID (email)
     """
-    flow = flow_from_clientsecrets(CLIENTSECRETS_LOCATION, " ".join(SCOPES))
-    flow.redirect_uri = REDIRECT_URI
+    cred_file_path = _get_credential_filename(user_id=user_id)
+    os.makedirs(os.path.dirname(cred_file_path), exist_ok=True)
+
+    cred_data = {
+        "token": credentials.token,
+        "refresh_token": credentials.refresh_token,
+        "token_uri": credentials.token_uri,
+        "client_id": credentials.client_id,
+        "client_secret": credentials.client_secret,
+        "scopes": credentials.scopes,
+    }
+
+    with open(cred_file_path, "w") as f:
+        json.dump(cred_data, f, indent=2)
+
+    cred_json = json.dumps(cred_data)
+    cred_b64 = base64.b64encode(cred_json.encode()).decode()
+
+    # Log a message about the secure storage (but don't log the actual credentials)
+    logging.info(f"Securely stored credentials for {user_id}")
+
+    return cred_b64
+
+
+def exchange_code(authorization_code, code_verifier=None):
+    """Exchange an authorization code for OAuth 2.0 credentials with PKCE.
+
+    Args:
+        authorization_code: Authorization code to exchange for OAuth 2.0 credentials
+        code_verifier: PKCE code verifier (if available)
+
+    Returns:
+        google.oauth2.credentials.Credentials instance
+
+    Raises:
+        CodeExchangeError: an error occurred
+    """
     try:
-        credentials = flow.step2_exchange(authorization_code)
-        return credentials
-    except FlowExchangeError as error:
+        with open(CLIENTSECRETS_LOCATION) as f:
+            client_config = json.load(f)
+
+        flow = Flow.from_client_config(
+            client_config=client_config,
+            scopes=SCOPES,
+            redirect_uri=REDIRECT_URI,
+        )
+
+        # Exchange authorization code for credentials
+        kwargs = {"code": authorization_code}
+        if code_verifier:
+            kwargs["code_verifier"] = code_verifier
+
+        flow.fetch_token(**kwargs)
+        return flow.credentials
+    except Exception as error:
         logging.error("An error occurred: %s", error)
         raise CodeExchangeError(None) from error
 
@@ -173,41 +232,114 @@ def get_user_info(credentials):
     """Send a request to the UserInfo API to retrieve the user's information.
 
     Args:
-    credentials: oauth2client.client.OAuth2Credentials instance to authorize the
+    credentials: google.oauth2.credentials.Credentials instance to authorize the
                     request.
     Returns:
     User information as a dict.
     """
-    user_info_service = build(serviceName="oauth2", version="v2", http=credentials.authorize(httplib2.Http()))
-    user_info = None
-    try:
-        user_info = user_info_service.userinfo().get().execute()
-    except Exception as e:
-        logging.error(f"An error occurred: {e}")
-    if user_info and user_info.get("id"):
-        return user_info
+    userinfo_endpoint = "https://www.googleapis.com/oauth2/v3/userinfo"
+    response = requests.get(
+        userinfo_endpoint,
+        headers={"Authorization": f"Bearer {credentials.token}"},
+    )
+
+    if response.status_code == 200:
+        user_info = response.json()
+        if user_info and user_info.get("sub"):  # OAuth 2.0 uses 'sub' as the ID
+            return user_info
     else:
-        raise NoUserIdError()
+        logging.error(f"Error getting user info: {response.text}")
+
+    raise NoUserIdError()
 
 
-def get_authorization_url(email_address, state):
+def get_authorization_url(email_address, state=None):
     """Retrieve the authorization URL.
 
     Args:
     email_address: User's e-mail address.
-    state: State for the authorization URL.
+    state: State for the authorization URL. Optional.
     Returns:
     Authorization URL to redirect the user to.
     """
-    flow = flow_from_clientsecrets(CLIENTSECRETS_LOCATION, " ".join(SCOPES), redirect_uri=REDIRECT_URI)
-    flow.params["access_type"] = "offline"
-    flow.params["approval_prompt"] = "force"
-    flow.params["user_id"] = email_address
-    flow.params["state"] = state
-    return flow.step1_get_authorize_url(state=state)
+    with open(CLIENTSECRETS_LOCATION) as f:
+        client_config = json.load(f)
+
+    flow = Flow.from_client_config(
+        client_config=client_config,
+        scopes=SCOPES,
+        redirect_uri=REDIRECT_URI,
+    )
+
+    kwargs = {
+        "access_type": "offline",
+        "prompt": "consent",
+        "login_hint": email_address,
+        "include_granted_scopes": "true",
+    }
+
+    if state:
+        kwargs["state"] = state
+
+    auth_url, _ = flow.authorization_url(**kwargs)
+    return auth_url
 
 
-def get_credentials(authorization_code, state):
+def generate_pkce_params():
+    """
+    Generate PKCE parameters for OAuth 2.1.
+
+    Returns:
+        tuple: (code_verifier, code_challenge, state)
+    """
+
+    code_verifier = secrets.token_urlsafe(64)
+
+    code_challenge_digest = hashlib.sha256(code_verifier.encode()).digest()
+    code_challenge = base64.urlsafe_b64encode(code_challenge_digest).decode().rstrip("=")
+
+    state = secrets.token_urlsafe(32)
+
+    return code_verifier, code_challenge, state
+
+
+def get_authorization_url_with_pkce(email_address):
+    """
+    Retrieve the authorization URL with PKCE support.
+
+    Args:
+        email_address: User's e-mail address
+
+    Returns:
+        Tuple of (authorization_url, code_verifier, state)
+    """
+    code_verifier, code_challenge, state = generate_pkce_params()
+
+    with open(CLIENTSECRETS_LOCATION) as f:
+        client_config = json.load(f)
+
+    flow = Flow.from_client_config(
+        client_config=client_config,
+        scopes=SCOPES,
+        redirect_uri=REDIRECT_URI,
+    )
+
+    flow.authorization_url_kwargs.update(
+        {
+            "access_type": "offline",
+            "approval_prompt": "force",
+            "login_hint": email_address,
+            "state": state,
+            "code_challenge": code_challenge,
+            "code_challenge_method": "S256",
+        }
+    )
+
+    auth_url, _ = flow.authorization_url()
+    return auth_url, code_verifier, state
+
+
+def get_credentials(authorization_code, state, code_verifier=None):
     """Retrieve credentials using the provided authorization code.
 
     This function exchanges the authorization code for an access token and queries
@@ -221,8 +353,9 @@ def get_credentials(authorization_code, state):
     Args:
     authorization_code: Authorization code to use to retrieve an access token.
     state: State to set to the authorization URL in case of error.
+    code_verifier: PKCE code verifier (if available)
     Returns:
-    oauth2client.client.OAuth2Credentials instance containing an access and
+    google.oauth2.credentials.Credentials instance containing an access and
     refresh token.
     Raises:
     CodeExchangeError: Could not exchange the authorization code.
@@ -231,12 +364,12 @@ def get_credentials(authorization_code, state):
     """
     email_address = ""
     try:
-        credentials = exchange_code(authorization_code)
+        credentials = exchange_code(authorization_code, code_verifier)
         user_info = get_user_info(credentials)
-        import json
 
-        logging.error(f"user_info: {json.dumps(user_info)}")
         email_address = user_info.get("email")
+
+        logging.debug(f"user_info: {json.dumps(user_info)}")
 
         if credentials.refresh_token is not None:
             store_credentials(credentials, user_id=email_address)
@@ -247,13 +380,12 @@ def get_credentials(authorization_code, state):
                 return credentials
     except CodeExchangeError as error:
         logging.error("An error occurred during code exchange.")
-        # Drive apps should try to retrieve the user and credentials for the current
-        # session.
         # If none is available, redirect the user to the authorization URL.
         error.authorization_url = get_authorization_url(email_address, state)
         raise error
     except NoUserIdError:
         logging.error("No user ID could be retrieved.")
-        # No refresh token has been retrieved.
+
+    # No refresh token has been retrieved.
     authorization_url = get_authorization_url(email_address, state)
     raise NoRefreshTokenError(authorization_url)

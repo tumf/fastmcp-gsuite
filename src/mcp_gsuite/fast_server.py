@@ -3,6 +3,7 @@ import logging
 from fastmcp import FastMCP
 
 from . import auth_helper
+from .auth_server import start_auth_server
 from .calendar_tools import create_calendar_event, delete_calendar_event, list_calendar_events, list_calendars
 from .drive_tools import (
     copy_drive_file,
@@ -149,4 +150,12 @@ if __name__ == "__main__":
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
     logger.info("Starting mcp-gsuite-fast server...")
+
+    try:
+        auth_server_thread = start_auth_server(port=4100)
+        logger.info("OAuth2 HTTP server started on port 4100")
+    except Exception as e:
+        logger.warning(f"Failed to start OAuth2 HTTP server: {e}")
+        logger.warning("Authentication will use legacy method without PKCE")
+
     mcp.run()  # Runs stdio by default
