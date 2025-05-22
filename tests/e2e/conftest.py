@@ -18,23 +18,6 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "e2e: mark a test as an end-to-end test")
 
 
-def pytest_addoption(parser):
-    """Add e2e command line option"""
-    parser.addoption("--run-e2e", action="store_true", default=False, help="Run e2e tests")
-
-
-def pytest_collection_modifyitems(config, items):
-    """Skip e2e tests unless --run-e2e is specified"""
-    if config.getoption("--run-e2e"):
-        # --run-e2e given in cli: do not skip e2e tests
-        return
-
-    skip_e2e = pytest.mark.skip(reason="Need --run-e2e option to run")
-    for item in items:
-        if "e2e" in item.keywords:
-            item.add_marker(skip_e2e)
-
-
 @pytest.fixture(scope="session")
 def check_env_vars():
     """Check if required environment variables are set for e2e tests"""
@@ -96,6 +79,7 @@ def oauth_token(check_env_vars) -> Generator[dict[str, Any], None, None]:
         token_expiry = (now + timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
         # Create credentials file content in the format expected by the MCP server
+        scopes = credentials.scopes or []
         credentials_json = {
             "access_token": credentials.token,
             "client_id": google_client_id,
@@ -111,10 +95,10 @@ def oauth_token(check_env_vars) -> Generator[dict[str, Any], None, None]:
                 "access_token": credentials.token,
                 "expires_in": 3600,
                 "refresh_token": credentials.refresh_token,
-                "scope": " ".join(credentials.scopes),
+                "scope": " ".join(scopes),
                 "token_type": "Bearer",
             },
-            "scopes": credentials.scopes,
+            "scopes": scopes,
             "token_info_uri": "https://oauth2.googleapis.com/tokeninfo",
             "invalid": False,
             "_class": "OAuth2Credentials",

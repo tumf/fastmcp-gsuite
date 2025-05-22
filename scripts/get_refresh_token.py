@@ -7,6 +7,8 @@ import os
 import sys
 import urllib.parse
 
+from dotenv import load_dotenv
+
 # Use core google-auth components
 from google_auth_oauthlib.flow import Flow  # Use base Flow for exchange
 
@@ -23,6 +25,7 @@ SCOPES = [
 ]
 
 # Get required environment variables directly, without dotenv
+load_dotenv()  # Load environment variables from .env file if it exists
 USER_ID = os.environ.get("GOOGLE_ACCOUNT_EMAIL")  # The email to authorize
 CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID")
 CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET")
@@ -119,6 +122,8 @@ def get_refresh_token_manual_url():
             "access_token": credentials.token,
             "token_expiry": (credentials.expiry.isoformat() if credentials.expiry else None),
             # google-auth might have other fields like id_token, token_uri
+            "user_agent": "fastmcp-gsuite",  # UAをfastmcp-gsuiteに変更
+            "invalid": False,    # Add invalid key (False by default)
         }
 
         os.makedirs(CREDENTIALS_DIR, exist_ok=True)

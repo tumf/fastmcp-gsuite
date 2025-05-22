@@ -4,6 +4,7 @@ from typing import Annotated
 
 from fastmcp import Context
 from mcp.types import TextContent
+from pydantic import Field
 
 from . import auth_helper
 from . import gmail as gmail_impl
@@ -14,14 +15,15 @@ logger = logging.getLogger(__name__)
 
 
 async def save_gmail_attachment_to_drive(
-    user_id: Annotated[str, get_user_id_description()],
-    message_id: Annotated[str, "The ID of the Gmail message containing the attachment."],
-    attachment_id: Annotated[str, "The ID of the attachment to save."],
+    user_id: Annotated[str, Field(description=get_user_id_description())],
+    message_id: Annotated[str, Field(description="The ID of the Gmail message containing the attachment.")],
+    attachment_id: Annotated[str, Field(description="The ID of the attachment to save.")],
     folder_id: Annotated[
-        str | None, "Optional Google Drive folder ID to save to. If not provided, saves to root."
+        str | None, Field(description="Optional Google Drive folder ID to save to. If not provided, saves to root.")
     ] = None,
     rename: Annotated[
-        str | None, "Optional new filename for the attachment. If not provided, uses original filename."
+        str | None,
+        Field(description="Optional new filename for the attachment. If not provided, uses original filename."),
     ] = None,
     ctx: Context | None = None,
 ) -> list[TextContent]:
@@ -92,14 +94,19 @@ async def save_gmail_attachment_to_drive(
 
 
 async def bulk_save_gmail_attachments_to_drive(
-    user_id: Annotated[str, get_user_id_description()],
+    user_id: Annotated[str, Field(description=get_user_id_description())],
     attachments: Annotated[
         list[dict],
-        "List of attachment information dictionaries. Each should have message_id, attachment_id, "
-        "and optionally folder_id and rename fields.",
+        Field(
+            description=(
+                "List of attachment information dictionaries. Each should have message_id, attachment_id, "
+                "and optionally folder_id and rename fields."
+            )
+        ),
     ],
     folder_id: Annotated[
-        str | None, "Default Google Drive folder ID to save attachments to if not specified per attachment."
+        str | None,
+        Field(description="Default Google Drive folder ID to save attachments to if not specified per attachment."),
     ] = None,
     ctx: Context | None = None,
 ) -> list[TextContent]:
@@ -174,7 +181,7 @@ async def bulk_save_gmail_attachments_to_drive(
                     continue
 
                 success_msg = (
-                    f"Successfully saved attachment '{filename}' to Google Drive. " f"File ID: {file_result.get('id')}"
+                    f"Successfully saved attachment '{filename}' to Google Drive. File ID: {file_result.get('id')}"
                 )
                 if ctx:
                     await ctx.info(success_msg)
