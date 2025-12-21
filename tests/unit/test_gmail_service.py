@@ -243,6 +243,164 @@ class TestGmailService(unittest.TestCase):
         self.mock_messages.get.assert_any_call(userId="me", id="msg1")
         self.mock_messages.get.assert_any_call(userId="me", id="msg2")
 
+    def test_get_email_by_id_with_attachments_flat(self):
+        """Test attachment extraction from flat (non-nested) message structure."""
+        mock_message = {
+            "id": "msg123",
+            "threadId": "thread123",
+            "payload": {
+                "mimeType": "multipart/mixed",
+                "headers": [{"name": "Subject", "value": "Test with attachment"}],
+                "parts": [
+                    {
+                        "partId": "0",
+                        "mimeType": "text/plain",
+                        "body": {"data": base64.urlsafe_b64encode(b"Body text").decode()},
+                    },
+                    {
+                        "partId": "1",
+                        "mimeType": "application/pdf",
+                        "filename": "invoice.pdf",
+                        "body": {"attachmentId": "attach123", "size": 12345},
+                    },
+                ],
+            },
+        }
+        self.mock_message_get.execute.return_value = mock_message
+
+        email, attachments = self.gmail_service.get_email_by_id_with_attachments("msg123")
+
+        self.assertIsNotNone(email)
+        self.assertEqual(len(attachments), 1)
+        self.assertIn("1", attachments)
+        self.assertEqual(attachments["1"]["attachmentId"], "attach123")
+        self.assertEqual(attachments["1"]["filename"], "invoice.pdf")
+        self.assertEqual(attachments["1"]["mimeType"], "application/pdf")
+
+    def test_get_email_by_id_with_attachments_nested(self):
+        """Test attachment extraction from nested multipart structure."""
+        # This simulates a common email structure:
+        # multipart/mixed
+        #   ├── multipart/alternative
+        #   │   ├── text/plain
+        #   │   └── text/html
+        #   └── application/pdf (attachment)
+        mock_message = {
+            "id": "msg456",
+            "threadId": "thread456",
+            "payload": {
+                "mimeType": "multipart/mixed",
+                "headers": [{"name": "Subject", "value": "Nested attachment test"}],
+                "parts": [
+                    {
+                        "partId": "0",
+                        "mimeType": "multipart/alternative",
+                        "parts": [
+                            {
+                                "partId": "0.0",
+                                "mimeType": "text/plain",
+                                "body": {"data": base64.urlsafe_b64encode(b"Plain text").decode()},
+                            },
+                            {
+                                "partId": "0.1",
+                                "mimeType": "text/html",
+                                "body": {"data": base64.urlsafe_b64encode(b"<p>HTML</p>").decode()},
+                            },
+                        ],
+                    },
+                    {
+                        "partId": "1",
+                        "mimeType": "application/pdf",
+                        "filename": "receipt.pdf",
+                        "body": {"attachmentId": "attach456", "size": 54321},
+                    },
+                ],
+            },
+        }
+        self.mock_message_get.execute.return_value = mock_message
+
+        email, attachments = self.gmail_service.get_email_by_id_with_attachments("msg456")
+
+        self.assertIsNotNone(email)
+        self.assertEqual(len(attachments), 1)
+        self.assertIn("1", attachments)
+        self.assertEqual(attachments["1"]["attachmentId"], "attach456")
+        self.assertEqual(attachments["1"]["filename"], "receipt.pdf")
+
+    def test_get_email_by_id_with_attachments_deeply_nested(self):
+        """Test attachment extraction from deeply nested multipart structure."""
+        # Deeply nested structure with attachment inside nested multipart
+        mock_message = {
+            "id": "msg789",
+            "threadId": "thread789",
+            "payload": {
+                "mimeType": "multipart/mixed",
+                "headers": [{"name": "Subject", "value": "Deeply nested test"}],
+                "parts": [
+                    {
+                        "partId": "0",
+                        "mimeType": "multipart/related",
+                        "parts": [
+                            {
+                                "partId": "0.0",
+                                "mimeType": "multipart/alternative",
+                                "parts": [
+                                    {
+                                        "partId": "0.0.0",
+                                        "mimeType": "text/plain",
+                                        "body": {"data": base64.urlsafe_b64encode(b"Text").decode()},
+                                    },
+                                ],
+                            },
+                            {
+                                "partId": "0.1",
+                                "mimeType": "image/png",
+                                "filename": "inline_image.png",
+                                "body": {"attachmentId": "inline123", "size": 1000},
+                            },
+                        ],
+                    },
+                    {
+                        "partId": "1",
+                        "mimeType": "application/pdf",
+                        "filename": "document.pdf",
+                        "body": {"attachmentId": "attach789", "size": 99999},
+                    },
+                ],
+            },
+        }
+        self.mock_message_get.execute.return_value = mock_message
+
+        email, attachments = self.gmail_service.get_email_by_id_with_attachments("msg789")
+
+        self.assertIsNotNone(email)
+        # Should find both the inline image and the PDF attachment
+        self.assertEqual(len(attachments), 2)
+        self.assertIn("0.1", attachments)
+        self.assertIn("1", attachments)
+        self.assertEqual(attachments["0.1"]["attachmentId"], "inline123")
+        self.assertEqual(attachments["0.1"]["filename"], "inline_image.png")
+        self.assertEqual(attachments["1"]["attachmentId"], "attach789")
+        self.assertEqual(attachments["1"]["filename"], "document.pdf")
+
+    def test_get_email_by_id_with_attachments_no_parts(self):
+        """Test handling of single-part message without attachments."""
+        mock_message = {
+            "id": "msg_simple",
+            "threadId": "thread_simple",
+            "payload": {
+                "mimeType": "text/plain",
+                "headers": [{"name": "Subject", "value": "Simple message"}],
+                "body": {"data": base64.urlsafe_b64encode(b"Just text").decode()},
+            },
+        }
+        self.mock_message_get.execute.return_value = mock_message
+
+        email, attachments = self.gmail_service.get_email_by_id_with_attachments("msg_simple")
+
+        self.assertIsNotNone(email)
+        self.assertEqual(len(attachments), 0)
+
 
 if __name__ == "__main__":
     unittest.main()

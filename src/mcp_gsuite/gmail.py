@@ -181,6 +181,34 @@ class GmailService:
             logging.error(traceback.format_exc())
             return []
 
+    def _extract_attachments_from_parts(self, parts: list, attachments: dict) -> None:
+        """
+        Recursively extract attachments from message parts.
+
+        This handles nested multipart structures (e.g., multipart/mixed containing
+        multipart/alternative) to find all attachments at any nesting level.
+
+        Args:
+            parts: List of message parts to scan
+            attachments: Dictionary to populate with found attachments (modified in place)
+        """
+        for part in parts:
+            # Check if this part has an attachment
+            if "body" in part and "attachmentId" in part["body"]:
+                attachment_id = part["body"]["attachmentId"]
+                part_id = part["partId"]
+                attachment = {
+                    "filename": part.get("filename", ""),
+                    "mimeType": part.get("mimeType", "application/octet-stream"),
+                    "attachmentId": attachment_id,
+                    "partId": part_id,
+                }
+                attachments[part_id] = attachment
+
+            # Recursively check nested parts (for multipart/* types)
+            if "parts" in part:
+                self._extract_attachments_from_parts(part["parts"], attachments)
+
     def get_email_by_id_with_attachments(self, email_id: str) -> tuple[dict, dict] | tuple[None, dict]:
         """
         Fetch and parse a complete email message by its ID including attachment IDs.
@@ -205,17 +233,8 @@ class GmailService:
             attachments = {}
             # Check if 'parts' exists in payload before trying to access it
             if "payload" in message and "parts" in message["payload"]:
-                for part in message["payload"]["parts"]:
-                    if "body" in part and "attachmentId" in part["body"]:
-                        attachment_id = part["body"]["attachmentId"]
-                        part_id = part["partId"]
-                        attachment = {
-                            "filename": part["filename"],
-                            "mimeType": part["mimeType"],
-                            "attachmentId": attachment_id,
-                            "partId": part_id,
-                        }
-                        attachments[part_id] = attachment
+                # Recursively extract attachments from all nested parts
+                self._extract_attachments_from_parts(message["payload"]["parts"], attachments)
             else:
                 # Handle case when there are no parts (single part message)
                 logging.info(f"Email {email_id} does not have 'parts' in payload (likely single part message)")

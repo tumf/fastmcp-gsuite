@@ -20,6 +20,7 @@ class TestGmailDriveTools(unittest.IsolatedAsyncioTestCase):
 
         self.test_user_id = "test@example.com"
         self.test_email_id = "test_email_123"
+        self.test_part_id = "1"
         self.test_attachment_id = "test_attachment_123"
         self.test_folder_id = "test_folder_123"
 
@@ -38,6 +39,7 @@ class TestGmailDriveTools(unittest.IsolatedAsyncioTestCase):
             "filename": "test.pdf",
             "mimeType": "application/pdf",
             "size": 12345,
+            "partId": self.test_part_id,
         }
 
         self.sample_attachment_data = {
@@ -59,7 +61,7 @@ class TestGmailDriveTools(unittest.IsolatedAsyncioTestCase):
     async def test_save_gmail_attachment_to_drive_success(
         self, mock_drive_service_class, mock_gmail_service_class, mock_get_drive_service, mock_get_gmail_service
     ):
-        """Test successful saving of Gmail attachment to Drive."""
+        """Test successful saving of Gmail attachment to Drive using part_id."""
         mock_gmail_service = MagicMock()
         mock_drive_service = MagicMock()
         mock_get_gmail_service.return_value = mock_gmail_service
@@ -70,7 +72,7 @@ class TestGmailDriveTools(unittest.IsolatedAsyncioTestCase):
 
         mock_gmail_service_instance.get_email_by_id_with_attachments.return_value = (
             self.sample_email,
-            {"part1": self.sample_attachment_metadata},
+            {self.test_part_id: self.sample_attachment_metadata},
         )
         mock_gmail_service_instance.get_attachment.return_value = self.sample_attachment_data
         mock_drive_service_instance.upload_file.return_value = self.sample_drive_file
@@ -78,7 +80,7 @@ class TestGmailDriveTools(unittest.IsolatedAsyncioTestCase):
         result = await save_gmail_attachment_to_drive(
             user_id=self.test_user_id,
             message_id=self.test_email_id,
-            attachment_id=self.test_attachment_id,
+            part_id=self.test_part_id,
             folder_id=self.test_folder_id,
             ctx=self.mock_context,  # type: ignore
         )
@@ -110,10 +112,10 @@ class TestGmailDriveTools(unittest.IsolatedAsyncioTestCase):
     @patch("src.mcp_gsuite.gmail_drive_tools.auth_helper.get_drive_service")
     @patch("src.mcp_gsuite.gmail_drive_tools.gmail_impl.GmailService")
     @patch("src.mcp_gsuite.gmail_drive_tools.DriveService")
-    async def test_save_gmail_attachment_to_drive_attachment_not_found(
+    async def test_save_gmail_attachment_to_drive_part_not_found(
         self, mock_drive_service_class, mock_gmail_service_class, mock_get_drive_service, mock_get_gmail_service
     ):
-        """Test handling when attachment is not found."""
+        """Test handling when part_id is not found."""
         mock_gmail_service = MagicMock()
         mock_drive_service = MagicMock()
         mock_get_gmail_service.return_value = mock_gmail_service
@@ -130,15 +132,13 @@ class TestGmailDriveTools(unittest.IsolatedAsyncioTestCase):
         result = await save_gmail_attachment_to_drive(
             user_id=self.test_user_id,
             message_id=self.test_email_id,
-            attachment_id=self.test_attachment_id,
+            part_id=self.test_part_id,
             ctx=self.mock_context,  # type: ignore
         )
 
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].type, "text")
-        self.assertEqual(
-            result[0].text, f"Attachment ID {self.test_attachment_id} not found in message {self.test_email_id}"
-        )
+        self.assertIn(f"Part ID '{self.test_part_id}' not found", result[0].text)
 
         mock_get_gmail_service.assert_called_once_with(self.test_user_id)
         mock_get_drive_service.assert_called_once_with(self.test_user_id)
@@ -169,7 +169,7 @@ class TestGmailDriveTools(unittest.IsolatedAsyncioTestCase):
 
         mock_gmail_service_instance.get_email_by_id_with_attachments.return_value = (
             self.sample_email,
-            {"part1": self.sample_attachment_metadata},
+            {self.test_part_id: self.sample_attachment_metadata},
         )
         mock_gmail_service_instance.get_attachment.return_value = self.sample_attachment_data
 
@@ -181,7 +181,7 @@ class TestGmailDriveTools(unittest.IsolatedAsyncioTestCase):
         result = await save_gmail_attachment_to_drive(
             user_id=self.test_user_id,
             message_id=self.test_email_id,
-            attachment_id=self.test_attachment_id,
+            part_id=self.test_part_id,
             rename=new_filename,
             ctx=self.mock_context,  # type: ignore
         )
@@ -218,7 +218,7 @@ class TestGmailDriveTools(unittest.IsolatedAsyncioTestCase):
             await save_gmail_attachment_to_drive(
                 user_id=self.test_user_id,
                 message_id=self.test_email_id,
-                attachment_id=self.test_attachment_id,
+                part_id=self.test_part_id,
                 ctx=self.mock_context,  # type: ignore
             )
 
@@ -234,7 +234,7 @@ class TestGmailDriveTools(unittest.IsolatedAsyncioTestCase):
     async def test_bulk_save_gmail_attachments_to_drive_success(
         self, mock_drive_service_class, mock_gmail_service_class, mock_get_drive_service, mock_get_gmail_service
     ):
-        """Test successful bulk saving of Gmail attachments to Drive."""
+        """Test successful bulk saving of Gmail attachments to Drive using part_id."""
         mock_gmail_service = MagicMock()
         mock_drive_service = MagicMock()
         mock_get_gmail_service.return_value = mock_gmail_service
@@ -245,7 +245,7 @@ class TestGmailDriveTools(unittest.IsolatedAsyncioTestCase):
 
         mock_gmail_service_instance.get_email_by_id_with_attachments.return_value = (
             self.sample_email,
-            {"part1": self.sample_attachment_metadata},
+            {self.test_part_id: self.sample_attachment_metadata},
         )
         mock_gmail_service_instance.get_attachment.return_value = self.sample_attachment_data
         mock_drive_service_instance.upload_file.return_value = self.sample_drive_file
@@ -253,12 +253,12 @@ class TestGmailDriveTools(unittest.IsolatedAsyncioTestCase):
         attachments = [
             {
                 "message_id": self.test_email_id,
-                "attachment_id": self.test_attachment_id,
+                "part_id": self.test_part_id,
                 "folder_id": self.test_folder_id,
             },
             {
                 "message_id": self.test_email_id,
-                "attachment_id": self.test_attachment_id,
+                "part_id": self.test_part_id,
                 "rename": "renamed.pdf",
             },
         ]
@@ -317,7 +317,7 @@ class TestGmailDriveTools(unittest.IsolatedAsyncioTestCase):
 
         attachments = [
             {
-                "attachment_id": self.test_attachment_id,
+                "part_id": self.test_part_id,
             },
             {
                 "message_id": self.test_email_id,
@@ -333,7 +333,7 @@ class TestGmailDriveTools(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(result), 2)  # Two error results
         for item in result:
             self.assertEqual(item.type, "text")
-            self.assertEqual(item.text, "Missing required fields in attachment info (message_id, attachment_id)")
+            self.assertEqual(item.text, "Missing required fields in attachment info (message_id, part_id)")
 
         mock_get_gmail_service.assert_called_once_with(self.test_user_id)
         mock_get_drive_service.assert_called_once_with(self.test_user_id)
@@ -362,7 +362,7 @@ class TestGmailDriveTools(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(RuntimeError) as context:
             await bulk_save_gmail_attachments_to_drive(
                 user_id=self.test_user_id,
-                attachments=[{"message_id": self.test_email_id, "attachment_id": self.test_attachment_id}],
+                attachments=[{"message_id": self.test_email_id, "part_id": self.test_part_id}],
                 ctx=self.mock_context,  # type: ignore
             )
 
@@ -370,3 +370,50 @@ class TestGmailDriveTools(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(len(self.mock_context.error_messages), 1)
         self.assertTrue("Error saving attachments to Drive: Test error" in self.mock_context.error_messages[0])
+
+    @patch("src.mcp_gsuite.gmail_drive_tools.auth_helper.get_gmail_service")
+    @patch("src.mcp_gsuite.gmail_drive_tools.auth_helper.get_drive_service")
+    @patch("src.mcp_gsuite.gmail_drive_tools.gmail_impl.GmailService")
+    @patch("src.mcp_gsuite.gmail_drive_tools.DriveService")
+    async def test_save_gmail_attachment_nested_part_id(
+        self, mock_drive_service_class, mock_gmail_service_class, mock_get_drive_service, mock_get_gmail_service
+    ):
+        """Test saving attachment with nested part_id (e.g., '0.1')."""
+        mock_gmail_service = MagicMock()
+        mock_drive_service = MagicMock()
+        mock_get_gmail_service.return_value = mock_gmail_service
+        mock_get_drive_service.return_value = mock_drive_service
+
+        mock_gmail_service_instance = mock_gmail_service_class.return_value
+        mock_drive_service_instance = mock_drive_service_class.return_value
+
+        nested_part_id = "0.1"
+        nested_attachment_metadata = {
+            "attachmentId": "nested_attachment_id",
+            "filename": "nested.pdf",
+            "mimeType": "application/pdf",
+            "size": 5000,
+            "partId": nested_part_id,
+        }
+
+        mock_gmail_service_instance.get_email_by_id_with_attachments.return_value = (
+            self.sample_email,
+            {nested_part_id: nested_attachment_metadata},
+        )
+        mock_gmail_service_instance.get_attachment.return_value = self.sample_attachment_data
+        mock_drive_service_instance.upload_file.return_value = self.sample_drive_file
+
+        result = await save_gmail_attachment_to_drive(
+            user_id=self.test_user_id,
+            message_id=self.test_email_id,
+            part_id=nested_part_id,
+            ctx=self.mock_context,  # type: ignore
+        )
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].type, "text")
+        self.assertEqual(json.loads(result[0].text), self.sample_drive_file)
+
+        mock_gmail_service_instance.get_attachment.assert_called_once_with(
+            message_id=self.test_email_id, attachment_id="nested_attachment_id"
+        )

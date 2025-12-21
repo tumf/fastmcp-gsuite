@@ -16,7 +16,11 @@ logger = logging.getLogger(__name__)
 async def save_gmail_attachment_to_drive(
     user_id: Annotated[str, get_user_id_description()],
     message_id: Annotated[str, "The ID of the Gmail message containing the attachment."],
-    attachment_id: Annotated[str, "The ID of the attachment to save."],
+    part_id: Annotated[
+        str,
+        "The part ID of the attachment to save (e.g., '1', '0.1'). "
+        "This is more stable than attachment_id and should be preferred.",
+    ],
     folder_id: Annotated[
         str | None, "Optional Google Drive folder ID to save to. If not provided, saves to root."
     ] = None,
@@ -25,11 +29,15 @@ async def save_gmail_attachment_to_drive(
     ] = None,
     ctx: Context | None = None,
 ) -> list[TextContent]:
-    """Save a Gmail attachment to Google Drive."""
+    """Save a Gmail attachment to Google Drive.
+
+    Uses part_id to identify the attachment, which is stable across API calls.
+    The part_id can be found in the attachments dictionary returned by get_email_details.
+    """
     try:
         if ctx:
             await ctx.info(
-                f"Saving attachment ID {attachment_id} from message ID {message_id} to Drive for user {user_id}"
+                f"Saving attachment (part_id={part_id}) from message ID {message_id} to Drive for user {user_id}"
             )
 
         g_service = auth_helper.get_gmail_service(user_id)
@@ -40,22 +48,30 @@ async def save_gmail_attachment_to_drive(
 
         email_details, attachments = gmail_service.get_email_by_id_with_attachments(email_id=message_id)
 
-        attachment_metadata = None
-        for _part_id, attachment_info in attachments.items():
-            if attachment_info.get("attachmentId") == attachment_id:
-                attachment_metadata = attachment_info
-                break
-
-        if not attachment_metadata:
-            error_msg = f"Attachment ID {attachment_id} not found in message {message_id}"
+        # Find attachment by part_id
+        if part_id not in attachments:
+            available_parts = list(attachments.keys())
+            error_msg = (
+                f"Part ID '{part_id}' not found in message {message_id}. " f"Available part IDs: {available_parts}"
+            )
             if ctx:
                 await ctx.warning(error_msg)
             return [TextContent(type="text", text=error_msg)]
 
-        attachment_data = gmail_service.get_attachment(message_id=message_id, attachment_id=attachment_id)
+        attachment_metadata = attachments[part_id]
+        # Use the current attachmentId from the fresh API response
+        current_attachment_id = attachment_metadata.get("attachmentId")
+
+        if not current_attachment_id:
+            error_msg = f"No attachmentId found for part_id '{part_id}' in message {message_id}"
+            if ctx:
+                await ctx.warning(error_msg)
+            return [TextContent(type="text", text=error_msg)]
+
+        attachment_data = gmail_service.get_attachment(message_id=message_id, attachment_id=current_attachment_id)
 
         if not attachment_data or not attachment_data.get("data"):
-            error_msg = f"Failed to retrieve attachment ID {attachment_id} data from message {message_id}"
+            error_msg = f"Failed to retrieve attachment data for part_id '{part_id}' from message {message_id}"
             if ctx:
                 await ctx.warning(error_msg)
             return [TextContent(type="text", text=error_msg)]
@@ -95,15 +111,20 @@ async def bulk_save_gmail_attachments_to_drive(
     user_id: Annotated[str, get_user_id_description()],
     attachments: Annotated[
         list[dict],
-        "List of attachment information dictionaries. Each should have message_id, attachment_id, "
-        "and optionally folder_id and rename fields.",
+        "List of attachment information dictionaries. Each should have message_id and part_id, "
+        "and optionally folder_id and rename fields. "
+        "Example: [{'message_id': 'abc123', 'part_id': '1', 'rename': 'invoice.pdf'}]",
     ],
     folder_id: Annotated[
         str | None, "Default Google Drive folder ID to save attachments to if not specified per attachment."
     ] = None,
     ctx: Context | None = None,
 ) -> list[TextContent]:
-    """Save multiple Gmail attachments to Google Drive in a single request."""
+    """Save multiple Gmail attachments to Google Drive in a single request.
+
+    Uses part_id to identify attachments, which is stable across API calls.
+    The part_id can be found in the attachments dictionary returned by get_email_details.
+    """
     try:
         if ctx:
             await ctx.info(f"Saving {len(attachments)} attachments to Drive for user {user_id}")
@@ -118,10 +139,10 @@ async def bulk_save_gmail_attachments_to_drive(
         for attachment_info in attachments:
             try:
                 message_id = attachment_info.get("message_id")
-                attachment_id = attachment_info.get("attachment_id")
+                part_id = attachment_info.get("part_id")
 
-                if not message_id or not attachment_id:
-                    error_msg = "Missing required fields in attachment info (message_id, attachment_id)"
+                if not message_id or not part_id:
+                    error_msg = "Missing required fields in attachment info (message_id, part_id)"
                     if ctx:
                         await ctx.error(error_msg)
                     results.append(TextContent(type="text", text=error_msg))
@@ -134,23 +155,35 @@ async def bulk_save_gmail_attachments_to_drive(
                     email_id=message_id
                 )
 
-                attachment_metadata = None
-                for _part_id, att_info in attachments_metadata.items():
-                    if att_info.get("attachmentId") == attachment_id:
-                        attachment_metadata = att_info
-                        break
-
-                if not attachment_metadata:
-                    error_msg = f"Attachment ID {attachment_id} not found in message {message_id}"
+                # Find attachment by part_id
+                if part_id not in attachments_metadata:
+                    available_parts = list(attachments_metadata.keys())
+                    error_msg = (
+                        f"Part ID '{part_id}' not found in message {message_id}. "
+                        f"Available part IDs: {available_parts}"
+                    )
                     if ctx:
                         await ctx.warning(error_msg)
                     results.append(TextContent(type="text", text=error_msg))
                     continue
 
-                attachment_data = gmail_service.get_attachment(message_id=message_id, attachment_id=attachment_id)
+                attachment_metadata = attachments_metadata[part_id]
+                # Use the current attachmentId from the fresh API response
+                current_attachment_id = attachment_metadata.get("attachmentId")
+
+                if not current_attachment_id:
+                    error_msg = f"No attachmentId found for part_id '{part_id}' in message {message_id}"
+                    if ctx:
+                        await ctx.warning(error_msg)
+                    results.append(TextContent(type="text", text=error_msg))
+                    continue
+
+                attachment_data = gmail_service.get_attachment(
+                    message_id=message_id, attachment_id=current_attachment_id
+                )
 
                 if not attachment_data or not attachment_data.get("data"):
-                    error_msg = f"Failed to retrieve attachment data for ID {attachment_id} from message {message_id}"
+                    error_msg = f"Failed to retrieve attachment data for part_id '{part_id}' from message {message_id}"
                     if ctx:
                         await ctx.warning(error_msg)
                     results.append(TextContent(type="text", text=error_msg))
