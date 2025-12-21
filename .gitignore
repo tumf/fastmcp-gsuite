@@ -20,3 +20,4 @@ prompt.txt
 credentials/
 .e2e_test_credentials.json
 .envrc
+openspec/changes/
