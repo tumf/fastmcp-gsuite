@@ -29,7 +29,9 @@ from .settings import settings
 
 CLIENTSECRETS_LOCATION = settings.absolute_gauth_file
 
-REDIRECT_URI = "http://localhost:4100/code"
+# Out-of-Band (OOB) redirect URI for desktop/CLI applications
+# User will copy the authorization code from browser
+REDIRECT_URI = "urn:ietf:wg:oauth:2.0:oob"
 SCOPES = [
     "openid",
     "https://www.googleapis.com/auth/userinfo.email",

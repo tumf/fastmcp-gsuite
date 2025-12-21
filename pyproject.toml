@@ -72,6 +72,7 @@ e2e = [
 # mcp-gsuite = "mcp_gsuite:main" # Old entry point
 fastmcp-gsuite-fast = "mcp_gsuite.fast_server:mcp.run" # New entry point using fastmcp
 fastmcp-gsuite = "mcp_gsuite.fast_server:mcp.run" # Alias for fastmcp implementation
+fastmcp-gsuite-setup = "mcp_gsuite.setup_cli:main" # Interactive setup CLI
 
 # Add pytest configuration to include project root in pythonpath
 [tool.pytest.ini_options]

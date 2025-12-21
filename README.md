@@ -51,18 +51,58 @@ Example prompts you can try:
 
 ### Install
 
-#### Oauth 2
+#### Quick Setup (Recommended)
 
-Google Workspace (G Suite) APIs require OAuth2 authorization. Follow these steps to set up authentication:
+The easiest way to set up authentication is using the interactive setup command:
+
+```bash
+# Install the package
+pip install fastmcp-gsuite
+# or with uv
+uv pip install fastmcp-gsuite
+
+# Run interactive setup
+uv run fastmcp-gsuite-setup
+```
+
+**Prerequisites:**
+- Create OAuth2 credentials in [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
+  - Select "Desktop app" as application type
+  - Enable Gmail API, Google Calendar API, and Google Drive API
+
+The setup wizard will guide you through:
+1. Entering your Google OAuth2 Client ID and Client Secret
+2. Authorizing your Google account(s) in browser
+3. Copying the authorization code from browser back to terminal
+4. Automatically creating all necessary configuration files
+
+**Additional Commands:**
+```bash
+# Add another Google account
+uv run fastmcp-gsuite-setup --add-account
+
+# List configured accounts
+uv run fastmcp-gsuite-setup --list
+
+# Remove an account
+uv run fastmcp-gsuite-setup --remove-account user@example.com
+```
+
+#### Manual Setup (Advanced)
+
+<details>
+  <summary>Click to expand manual setup instructions</summary>
+
+Google Workspace (G Suite) APIs require OAuth2 authorization. Follow these steps to set up authentication manually:
 
 1. Create OAuth2 Credentials:
    - Go to the [Google Cloud Console](https://console.cloud.google.com/)
    - Create a new project or select an existing one
-   - Enable the Gmail API and Google Calendar API for your project
+   - Enable the Gmail API, Google Calendar API, and Google Drive API for your project
    - Go to "Credentials" → "Create Credentials" → "OAuth client ID"
-   - Select "Desktop app" or "Web application" as the application type
+   - Select "Desktop app" as the application type
    - Configure the OAuth consent screen with required information
-   - Add authorized redirect URIs (include `http://localhost:4100/code` for local development)
+   - **Note**: For desktop/CLI applications, the redirect URI `urn:ietf:wg:oauth:2.0:oob` will be used automatically
 
 2. Required OAuth2 Scopes:
 
@@ -71,25 +111,32 @@ Google Workspace (G Suite) APIs require OAuth2 authorization. Follow these steps
      "openid",
      "https://mail.google.com/",
      "https://www.googleapis.com/auth/calendar",
+     "https://www.googleapis.com/auth/drive",
      "https://www.googleapis.com/auth/userinfo.email"
    ]
 ```
 
-3. Then create a `.gauth.json` in your working directory with client
+3. Create a `.gauth.json` in your working directory:
 
 ```json
 {
-    "web": {
+    "installed": {
         "client_id": "$your_client_id",
         "client_secret": "$your_client_secret",
-        "redirect_uris": ["http://localhost:4100/code"],
+        "redirect_uris": ["urn:ietf:wg:oauth:2.0:oob", "http://localhost"],
         "auth_uri": "https://accounts.google.com/o/oauth2/auth",
         "token_uri": "https://oauth2.googleapis.com/token"
     }
 }
 ```
 
-4. Create a `.accounts.json` file with account information
+**Note**: 
+- Use `"installed"` for Desktop app credentials (recommended)
+- Alternatively, `"web"` format also works with this library
+- `urn:ietf:wg:oauth:2.0:oob` is the Out-of-Band (OOB) redirect URI
+- Google will display the authorization code in the browser for you to copy and paste
+
+4. Create a `.accounts.json` file with account information:
 
 ```json
 {
@@ -103,9 +150,23 @@ Google Workspace (G Suite) APIs require OAuth2 authorization. Follow these steps
 }
 ```
 
-You can specify multiple accounts. Make sure they have access in your Google Auth app. The `extra_info` field is especially interesting as you can add info here that you want to tell the AI about the account (e.g. whether it has a specific agenda)
+You can specify multiple accounts. Make sure they have access in your Google Auth app. The `extra_info` field is especially interesting as you can add info here that you want to tell the AI about the account (e.g. whether it has a specific agenda).
 
-Note: **Initial Authentication Required:** Before running the server for the first time with a new account, you need to perform an initial OAuth2 authentication. This server does not yet include a built-in command for this. You may need to adapt the authentication logic from the previous version or use a separate script to generate the initial `.oauth2.{email}.json` credential file by completing the Google OAuth flow (which involves opening a browser, logging in, and granting permissions). Once the credential file exists, the server will use it and attempt to refresh the token automatically when needed.
+5. Run the authentication script to generate credentials:
+
+```bash
+# Set environment variables
+export GOOGLE_ACCOUNT_EMAIL="your-email@example.com"
+export GOOGLE_CLIENT_ID="your-client-id"
+export GOOGLE_CLIENT_SECRET="your-client-secret"
+
+# Run the script
+uv run python scripts/get_refresh_token.py
+```
+
+This will open a browser for authorization and create `.oauth2.{email}.json` credential files.
+
+</details>
 
 #### Claude Desktop
 
@@ -189,6 +250,31 @@ CREDENTIALS_DIR=/path/to/your/credentials
 ```
 
 This allows for flexible configuration without command-line arguments when running the server.
+
+### Troubleshooting Setup
+
+**Problem: "No refresh token received"**
+- **Cause**: You may have already authorized the app previously
+- **Solution**: Go to https://myaccount.google.com/permissions and revoke access, then try setup again
+
+**Problem: "Browser doesn't open automatically"**
+- **Solution**: Copy the authorization URL displayed in the terminal and open it manually in your browser
+
+**Problem: "Redirect URI mismatch" error**
+- **Cause**: Google Cloud Console has wrong redirect URI configured
+- **Solution**: In Google Cloud Console, ensure your OAuth client is configured as "Desktop app" type. Desktop apps automatically use `urn:ietf:wg:oauth:2.0:oob` as the redirect URI
+
+**Problem: "Permission denied when creating .gauth.json"**
+- **Cause**: Insufficient write permissions in current directory
+- **Solution**: Run setup in a directory where you have write permissions, or use `GAUTH_FILE` environment variable to specify a different location
+
+**Problem: "Account already exists" when adding account**
+- **Solution**: Use `--remove-account` to remove the old account first, or choose to overwrite when prompted
+
+**Problem: Setup works but MCP server can't find credentials**
+- **Solution**: Ensure you're running the MCP server from the same directory where you ran setup, or set `GAUTH_FILE`, `ACCOUNTS_FILE`, and `CREDENTIALS_DIR` environment variables to point to the correct locations
+
+For more help, see the [GitHub Issues](https://github.com/tumf/fastmcp-gsuite/issues).
 
 ## Development
 
