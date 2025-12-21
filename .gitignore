@@ -19,3 +19,4 @@ prompt.txt
 .coverage
 credentials/
 .e2e_test_credentials.json
+.envrc
