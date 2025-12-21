@@ -54,9 +54,11 @@ class TestDriveService(unittest.TestCase):
         self.assertEqual(result, {"files": mock_response["files"]})
 
         self.mock_service.files.assert_called_once()
+        from src.mcp_gsuite.drive import FILE_LIST_FIELDS
+
         self.mock_files.list.assert_called_once_with(
             pageSize=10,
-            fields="files(id, name, mimeType, trashed, parents, modifiedTime, size, webViewLink, iconLink)",
+            fields=FILE_LIST_FIELDS,
             q="name contains 'test'",
             orderBy="name",
         )
@@ -83,9 +85,11 @@ class TestDriveService(unittest.TestCase):
         self.assertEqual(result, mock_response)
 
         self.mock_service.files.assert_called_once()
+        from src.mcp_gsuite.drive import FILE_FIELDS
+
         self.mock_files.get.assert_called_once_with(
             fileId="file1",
-            fields="id, name, mimeType, trashed, parents, modifiedTime, size, webViewLink, iconLink",
+            fields=FILE_FIELDS,
         )
         self.mock_files_get.execute.assert_called_once()
 

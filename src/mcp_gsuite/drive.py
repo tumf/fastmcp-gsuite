@@ -6,6 +6,10 @@ import traceback
 
 from googleapiclient.http import MediaFileUpload, MediaIoBaseUpload
 
+# Common fields for Drive API responses
+FILE_FIELDS = "id, name, mimeType, md5Checksum, trashed, parents, modifiedTime, size, webViewLink, iconLink"
+FILE_LIST_FIELDS = f"files({FILE_FIELDS})"
+
 
 class DriveService:
     def __init__(self, service):
@@ -31,7 +35,7 @@ class DriveService:
 
             params = {
                 "pageSize": page_size,
-                "fields": "files(id, name, mimeType, trashed, parents, modifiedTime, size, webViewLink, iconLink)",
+                "fields": FILE_LIST_FIELDS,
             }
 
             if query:
@@ -65,7 +69,7 @@ class DriveService:
                 self.service.files()
                 .get(
                     fileId=file_id,
-                    fields="id, name, mimeType, trashed, parents, modifiedTime, size, webViewLink, iconLink",
+                    fields=FILE_FIELDS,
                 )
                 .execute()
             )
@@ -174,7 +178,7 @@ class DriveService:
                 .create(
                     body=file_metadata,
                     media_body=media,
-                    fields="id, name, mimeType, trashed, parents, modifiedTime, size, webViewLink, iconLink",
+                    fields=FILE_FIELDS,
                 )
                 .execute()
             )
@@ -210,7 +214,7 @@ class DriveService:
                 .copy(
                     fileId=file_id,
                     body=body,
-                    fields="id, name, mimeType, trashed, parents, modifiedTime, size, webViewLink, iconLink",
+                    fields=FILE_FIELDS,
                 )
                 .execute()
             )
@@ -258,7 +262,7 @@ class DriveService:
                 .update(
                     fileId=file_id,
                     body=file_metadata,
-                    fields="id, name, mimeType, trashed, parents, modifiedTime, size, webViewLink, iconLink",
+                    fields=FILE_FIELDS,
                 )
                 .execute()
             )
@@ -293,7 +297,7 @@ class DriveService:
                     fileId=file_id,
                     addParents=new_parent_id,
                     removeParents=previous_parents if remove_previous_parents else None,
-                    fields="id, name, mimeType, trashed, parents, modifiedTime, size, webViewLink, iconLink",
+                    fields=FILE_FIELDS,
                 )
                 .execute()
             )

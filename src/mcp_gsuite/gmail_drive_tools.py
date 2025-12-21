@@ -99,6 +99,7 @@ async def save_gmail_attachment_to_drive(
         result = {
             "id": file_result.get("id"),
             "name": file_result.get("name"),
+            "md5Checksum": file_result.get("md5Checksum"),
             "webViewLink": file_result.get("webViewLink"),
         }
 
@@ -221,6 +222,7 @@ async def bulk_save_gmail_attachments_to_drive(
                 result = {
                     "id": file_result.get("id"),
                     "name": file_result.get("name"),
+                    "md5Checksum": file_result.get("md5Checksum"),
                     "webViewLink": file_result.get("webViewLink"),
                 }
 

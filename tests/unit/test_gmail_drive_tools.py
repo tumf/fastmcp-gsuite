@@ -56,6 +56,7 @@ class TestGmailDriveTools(unittest.IsolatedAsyncioTestCase):
             "id": "drive_file_123",
             "name": "test.pdf",
             "mimeType": "application/pdf",
+            "md5Checksum": "d41d8cd98f00b204e9800998ecf8427e",
             "webViewLink": "https://drive.google.com/file/d/drive_file_123/view",
         }
 
@@ -63,6 +64,7 @@ class TestGmailDriveTools(unittest.IsolatedAsyncioTestCase):
         self.sample_drive_file = {
             "id": "drive_file_123",
             "name": "test.pdf",
+            "md5Checksum": "d41d8cd98f00b204e9800998ecf8427e",
             "webViewLink": "https://drive.google.com/file/d/drive_file_123/view",
         }
 
@@ -194,6 +196,7 @@ class TestGmailDriveTools(unittest.IsolatedAsyncioTestCase):
         renamed_file = {
             "id": renamed_file_full["id"],
             "name": renamed_file_full["name"],
+            "md5Checksum": renamed_file_full["md5Checksum"],
             "webViewLink": renamed_file_full["webViewLink"],
         }
 
