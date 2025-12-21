@@ -30,7 +30,6 @@ from .gmail_tools import (
     create_gmail_reply,
     delete_gmail_draft,
     get_email_details,
-    get_gmail_attachment,
     get_gmail_labels,
     query_gmail_emails,
 )
@@ -93,7 +92,8 @@ mcp.tool(description="Delete a draft email from Gmail.")(delete_gmail_draft)
 
 mcp.tool(description="Create a reply to an existing Gmail email message.")(create_gmail_reply)
 
-mcp.tool(description="Retrieve a Gmail attachment by its ID.")(get_gmail_attachment)
+# get_gmail_attachment is deprecated - use save_gmail_attachment_to_drive instead
+# to avoid returning large base64 data that consumes context
 
 mcp.tool(
     description="Save multiple Gmail attachments to disk by their message IDs and attachment IDs in a single request."

@@ -1,11 +1,8 @@
-# Spec: Interactive Authentication Setup CLI
+# setup-cli Specification
 
-## Overview
-
-This spec defines the interactive command-line interface for setting up Google OAuth2 authentication for fastmcp-gsuite, supporting multiple Google accounts with a streamlined user experience.
-
-## ADDED Requirements
-
+## Purpose
+TBD - created by archiving change improve-auth-setup. Update Purpose after archive.
+## Requirements
 ### Requirement: CLI Entry Point
 
 The package MUST provide a `setup` command accessible via `uv run fastmcp-gsuite setup` or `python -m mcp_gsuite.setup_cli`.
@@ -324,28 +321,3 @@ The setup command MUST NOT break existing manual setup workflows.
 
 ---
 
-## Implementation Notes
-
-### Dependencies
-- `webbrowser` (standard library) - for opening authorization URLs
-- `argparse` (standard library) - for CLI argument parsing
-- Existing `gauth.py` functions - for OAuth flow
-- Existing `settings.py` - for file path configuration
-
-### File Locations
-All files respect the existing `settings.py` configuration:
-- Client credentials: `settings.absolute_gauth_file`
-- Accounts registry: `settings.absolute_accounts_file`
-- OAuth tokens: `settings.absolute_credentials_dir/.oauth2.{email}.json`
-
-### Error Codes
-- 0: Success
-- 1: General error (invalid input, file not found, etc.)
-- 2: Network/API error
-- 130: User interrupted (Ctrl+C)
-
-### Future Enhancements (Not in Scope)
-- Integration with `rich` library for enhanced terminal UI
-- Validation of Google API enablement
-- Automatic credential refresh testing
-- Shell completion support

@@ -1,3 +1,4 @@
+import base64
 import json
 import unittest
 from unittest.mock import MagicMock, patch
@@ -42,15 +43,26 @@ class TestGmailDriveTools(unittest.IsolatedAsyncioTestCase):
             "partId": self.test_part_id,
         }
 
+        # Use real URL-safe base64 encoded data (Gmail API format)
+        self.sample_binary_content = b"This is test PDF content"
+        self.sample_base64_data = base64.urlsafe_b64encode(self.sample_binary_content).decode("utf-8")
         self.sample_attachment_data = {
-            "data": "base64encodeddata",
-            "size": 12345,
+            "data": self.sample_base64_data,
+            "size": len(self.sample_binary_content),
         }
 
-        self.sample_drive_file = {
+        # Full response from Drive API (used for mocking)
+        self.sample_drive_file_full = {
             "id": "drive_file_123",
             "name": "test.pdf",
             "mimeType": "application/pdf",
+            "webViewLink": "https://drive.google.com/file/d/drive_file_123/view",
+        }
+
+        # Minimal response returned by save functions (to reduce context)
+        self.sample_drive_file = {
+            "id": "drive_file_123",
+            "name": "test.pdf",
             "webViewLink": "https://drive.google.com/file/d/drive_file_123/view",
         }
 
@@ -75,7 +87,7 @@ class TestGmailDriveTools(unittest.IsolatedAsyncioTestCase):
             {self.test_part_id: self.sample_attachment_metadata},
         )
         mock_gmail_service_instance.get_attachment.return_value = self.sample_attachment_data
-        mock_drive_service_instance.upload_file.return_value = self.sample_drive_file
+        mock_drive_service_instance.upload_file.return_value = self.sample_drive_file_full
 
         result = await save_gmail_attachment_to_drive(
             user_id=self.test_user_id,
@@ -95,14 +107,15 @@ class TestGmailDriveTools(unittest.IsolatedAsyncioTestCase):
         mock_drive_service_class.assert_called_once_with(mock_drive_service)
 
         mock_gmail_service_instance.get_email_by_id_with_attachments.assert_called_once_with(
-            email_id=self.test_email_id
+            email_id=self.test_email_id, parse_body=False
         )
         mock_gmail_service_instance.get_attachment.assert_called_once_with(
             message_id=self.test_email_id, attachment_id=self.test_attachment_id
         )
 
+        # Verify that decoded binary content is passed (not base64 string)
         mock_drive_service_instance.upload_file.assert_called_once_with(
-            file_content=self.sample_attachment_data["data"],
+            file_content=self.sample_binary_content,
             file_name=self.sample_attachment_metadata["filename"],
             mime_type=self.sample_attachment_metadata["mimeType"],
             parent_folder_id=self.test_folder_id,
@@ -146,7 +159,7 @@ class TestGmailDriveTools(unittest.IsolatedAsyncioTestCase):
         mock_drive_service_class.assert_called_once_with(mock_drive_service)
 
         mock_gmail_service_instance.get_email_by_id_with_attachments.assert_called_once_with(
-            email_id=self.test_email_id
+            email_id=self.test_email_id, parse_body=False
         )
 
         mock_drive_service_instance.upload_file.assert_not_called()
@@ -173,9 +186,16 @@ class TestGmailDriveTools(unittest.IsolatedAsyncioTestCase):
         )
         mock_gmail_service_instance.get_attachment.return_value = self.sample_attachment_data
 
-        renamed_file = self.sample_drive_file.copy()
-        renamed_file["name"] = "renamed.pdf"
-        mock_drive_service_instance.upload_file.return_value = renamed_file
+        renamed_file_full = self.sample_drive_file_full.copy()
+        renamed_file_full["name"] = "renamed.pdf"
+        mock_drive_service_instance.upload_file.return_value = renamed_file_full
+
+        # Expected minimal result
+        renamed_file = {
+            "id": renamed_file_full["id"],
+            "name": renamed_file_full["name"],
+            "webViewLink": renamed_file_full["webViewLink"],
+        }
 
         new_filename = "renamed.pdf"
         result = await save_gmail_attachment_to_drive(
@@ -190,8 +210,9 @@ class TestGmailDriveTools(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result[0].type, "text")
         self.assertEqual(json.loads(result[0].text), renamed_file)
 
+        # Verify that decoded binary content is passed (not base64 string)
         mock_drive_service_instance.upload_file.assert_called_once_with(
-            file_content=self.sample_attachment_data["data"],
+            file_content=self.sample_binary_content,
             file_name=new_filename,
             mime_type=self.sample_attachment_metadata["mimeType"],
             parent_folder_id=None,
@@ -248,7 +269,7 @@ class TestGmailDriveTools(unittest.IsolatedAsyncioTestCase):
             {self.test_part_id: self.sample_attachment_metadata},
         )
         mock_gmail_service_instance.get_attachment.return_value = self.sample_attachment_data
-        mock_drive_service_instance.upload_file.return_value = self.sample_drive_file
+        mock_drive_service_instance.upload_file.return_value = self.sample_drive_file_full
 
         attachments = [
             {
@@ -285,15 +306,16 @@ class TestGmailDriveTools(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(mock_drive_service_instance.upload_file.call_count, 2)
 
+        # Verify that decoded binary content is passed (not base64 string)
         mock_drive_service_instance.upload_file.assert_any_call(
-            file_content=self.sample_attachment_data["data"],
+            file_content=self.sample_binary_content,
             file_name=self.sample_attachment_metadata["filename"],
             mime_type=self.sample_attachment_metadata["mimeType"],
             parent_folder_id=self.test_folder_id,
         )
 
         mock_drive_service_instance.upload_file.assert_any_call(
-            file_content=self.sample_attachment_data["data"],
+            file_content=self.sample_binary_content,
             file_name="renamed.pdf",
             mime_type=self.sample_attachment_metadata["mimeType"],
             parent_folder_id=None,
@@ -401,7 +423,7 @@ class TestGmailDriveTools(unittest.IsolatedAsyncioTestCase):
             {nested_part_id: nested_attachment_metadata},
         )
         mock_gmail_service_instance.get_attachment.return_value = self.sample_attachment_data
-        mock_drive_service_instance.upload_file.return_value = self.sample_drive_file
+        mock_drive_service_instance.upload_file.return_value = self.sample_drive_file_full
 
         result = await save_gmail_attachment_to_drive(
             user_id=self.test_user_id,
@@ -417,3 +439,93 @@ class TestGmailDriveTools(unittest.IsolatedAsyncioTestCase):
         mock_gmail_service_instance.get_attachment.assert_called_once_with(
             message_id=self.test_email_id, attachment_id="nested_attachment_id"
         )
+
+    @patch("src.mcp_gsuite.gmail_drive_tools.auth_helper.get_gmail_service")
+    @patch("src.mcp_gsuite.gmail_drive_tools.auth_helper.get_drive_service")
+    @patch("src.mcp_gsuite.gmail_drive_tools.gmail_impl.GmailService")
+    @patch("src.mcp_gsuite.gmail_drive_tools.DriveService")
+    async def test_save_gmail_attachment_base64_decode(
+        self, mock_drive_service_class, mock_gmail_service_class, mock_get_drive_service, mock_get_gmail_service
+    ):
+        """Test that URL-safe base64 encoded data is properly decoded before upload."""
+        mock_gmail_service = MagicMock()
+        mock_drive_service = MagicMock()
+        mock_get_gmail_service.return_value = mock_gmail_service
+        mock_get_drive_service.return_value = mock_drive_service
+
+        mock_gmail_service_instance = mock_gmail_service_class.return_value
+        mock_drive_service_instance = mock_drive_service_class.return_value
+
+        # Use content that produces URL-safe base64 characters (- and _)
+        # This tests that urlsafe_b64decode is used instead of standard b64decode
+        original_content = b"\xfb\xff\xfe"  # Produces characters that differ in standard vs URL-safe base64
+        url_safe_base64 = base64.urlsafe_b64encode(original_content).decode("utf-8")
+
+        attachment_data_with_special_chars = {
+            "data": url_safe_base64,
+            "size": len(original_content),
+        }
+
+        mock_gmail_service_instance.get_email_by_id_with_attachments.return_value = (
+            self.sample_email,
+            {self.test_part_id: self.sample_attachment_metadata},
+        )
+        mock_gmail_service_instance.get_attachment.return_value = attachment_data_with_special_chars
+        mock_drive_service_instance.upload_file.return_value = self.sample_drive_file_full
+
+        result = await save_gmail_attachment_to_drive(
+            user_id=self.test_user_id,
+            message_id=self.test_email_id,
+            part_id=self.test_part_id,
+            ctx=self.mock_context,  # type: ignore
+        )
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].type, "text")
+
+        # Verify that the decoded binary content matches the original
+        call_args = mock_drive_service_instance.upload_file.call_args
+        uploaded_content = call_args.kwargs["file_content"]
+        self.assertEqual(uploaded_content, original_content)
+        self.assertIsInstance(uploaded_content, bytes)
+
+    @patch("src.mcp_gsuite.gmail_drive_tools.auth_helper.get_gmail_service")
+    @patch("src.mcp_gsuite.gmail_drive_tools.auth_helper.get_drive_service")
+    @patch("src.mcp_gsuite.gmail_drive_tools.gmail_impl.GmailService")
+    @patch("src.mcp_gsuite.gmail_drive_tools.DriveService")
+    async def test_bulk_save_gmail_attachments_base64_decode(
+        self, mock_drive_service_class, mock_gmail_service_class, mock_get_drive_service, mock_get_gmail_service
+    ):
+        """Test that bulk save properly decodes base64 data for each attachment."""
+        mock_gmail_service = MagicMock()
+        mock_drive_service = MagicMock()
+        mock_get_gmail_service.return_value = mock_gmail_service
+        mock_get_drive_service.return_value = mock_drive_service
+
+        mock_gmail_service_instance = mock_gmail_service_class.return_value
+        mock_drive_service_instance = mock_drive_service_class.return_value
+
+        mock_gmail_service_instance.get_email_by_id_with_attachments.return_value = (
+            self.sample_email,
+            {self.test_part_id: self.sample_attachment_metadata},
+        )
+        mock_gmail_service_instance.get_attachment.return_value = self.sample_attachment_data
+        mock_drive_service_instance.upload_file.return_value = self.sample_drive_file_full
+
+        attachments = [
+            {"message_id": self.test_email_id, "part_id": self.test_part_id},
+        ]
+
+        result = await bulk_save_gmail_attachments_to_drive(
+            user_id=self.test_user_id,
+            attachments=attachments,
+            ctx=self.mock_context,  # type: ignore
+        )
+
+        self.assertEqual(len(result), 1)
+
+        # Verify that the decoded binary content is passed to upload_file
+        call_args = mock_drive_service_instance.upload_file.call_args
+        uploaded_content = call_args.kwargs["file_content"]
+        self.assertEqual(uploaded_content, self.sample_binary_content)
+        self.assertIsInstance(uploaded_content, bytes)

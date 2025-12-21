@@ -1,3 +1,4 @@
+import base64
 import json
 import logging
 from typing import Annotated
@@ -46,7 +47,9 @@ async def save_gmail_attachment_to_drive(
         d_service = auth_helper.get_drive_service(user_id)
         drive_service = DriveService(d_service)
 
-        email_details, attachments = gmail_service.get_email_by_id_with_attachments(email_id=message_id)
+        _, attachments = gmail_service.get_email_by_id_with_attachments(
+            email_id=message_id, parse_body=False
+        )
 
         # Find attachment by part_id
         if part_id not in attachments:
@@ -79,8 +82,11 @@ async def save_gmail_attachment_to_drive(
         filename = rename or attachment_metadata.get("filename", "unknown_file")
         mime_type = attachment_metadata.get("mimeType", "application/octet-stream")
 
+        # Decode base64 data - Gmail API returns URL-safe base64 encoded content
+        decoded_content = base64.urlsafe_b64decode(attachment_data["data"])
+
         file_result = drive_service.upload_file(
-            file_content=attachment_data["data"], file_name=filename, mime_type=mime_type, parent_folder_id=folder_id
+            file_content=decoded_content, file_name=filename, mime_type=mime_type, parent_folder_id=folder_id
         )
 
         if not file_result:
@@ -89,15 +95,17 @@ async def save_gmail_attachment_to_drive(
                 await ctx.error(error_msg)
             return [TextContent(type="text", text=error_msg)]
 
-        success_msg = (
-            f"Successfully saved attachment '{filename}' to Google Drive.\n"
-            f"File ID: {file_result.get('id')}\n"
-            f"Web View Link: {file_result.get('webViewLink')}"
-        )
-        if ctx:
-            await ctx.info(success_msg)
+        # Return only essential fields to minimize context consumption
+        result = {
+            "id": file_result.get("id"),
+            "name": file_result.get("name"),
+            "webViewLink": file_result.get("webViewLink"),
+        }
 
-        return [TextContent(type="text", text=json.dumps(file_result, indent=2))]
+        if ctx:
+            await ctx.info(f"Saved '{filename}' to Drive (ID: {result['id']})")
+
+        return [TextContent(type="text", text=json.dumps(result))]
 
     except Exception as e:
         logger.error(f"Error in save_gmail_attachment_to_drive for {user_id}: {e}", exc_info=True)
@@ -151,8 +159,8 @@ async def bulk_save_gmail_attachments_to_drive(
                 item_folder_id = attachment_info.get("folder_id", folder_id)  # Use per-item folder_id or default
                 rename = attachment_info.get("rename")  # Optional rename field
 
-                email_details, attachments_metadata = gmail_service.get_email_by_id_with_attachments(
-                    email_id=message_id
+                _, attachments_metadata = gmail_service.get_email_by_id_with_attachments(
+                    email_id=message_id, parse_body=False
                 )
 
                 # Find attachment by part_id
@@ -192,8 +200,11 @@ async def bulk_save_gmail_attachments_to_drive(
                 filename = rename or attachment_metadata.get("filename", "unknown_file")
                 mime_type = attachment_metadata.get("mimeType", "application/octet-stream")
 
+                # Decode base64 data - Gmail API returns URL-safe base64 encoded content
+                decoded_content = base64.urlsafe_b64decode(attachment_data["data"])
+
                 file_result = drive_service.upload_file(
-                    file_content=attachment_data["data"],
+                    file_content=decoded_content,
                     file_name=filename,
                     mime_type=mime_type,
                     parent_folder_id=item_folder_id,
@@ -206,13 +217,17 @@ async def bulk_save_gmail_attachments_to_drive(
                     results.append(TextContent(type="text", text=error_msg))
                     continue
 
-                success_msg = (
-                    f"Successfully saved attachment '{filename}' to Google Drive. " f"File ID: {file_result.get('id')}"
-                )
-                if ctx:
-                    await ctx.info(success_msg)
+                # Return only essential fields to minimize context consumption
+                result = {
+                    "id": file_result.get("id"),
+                    "name": file_result.get("name"),
+                    "webViewLink": file_result.get("webViewLink"),
+                }
 
-                results.append(TextContent(type="text", text=json.dumps(file_result, indent=2)))
+                if ctx:
+                    await ctx.info(f"Saved '{filename}' to Drive (ID: {result['id']})")
+
+                results.append(TextContent(type="text", text=json.dumps(result)))
 
             except Exception as inner_e:
                 error_msg = f"Error processing attachment: {inner_e!s}"

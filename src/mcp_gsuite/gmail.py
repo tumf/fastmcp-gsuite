@@ -209,23 +209,26 @@ class GmailService:
             if "parts" in part:
                 self._extract_attachments_from_parts(part["parts"], attachments)
 
-    def get_email_by_id_with_attachments(self, email_id: str) -> tuple[dict, dict] | tuple[None, dict]:
+    def get_email_by_id_with_attachments(
+        self, email_id: str, parse_body: bool = True
+    ) -> tuple[dict, dict] | tuple[None, dict]:
         """
         Fetch and parse a complete email message by its ID including attachment IDs.
 
         Args:
             email_id (str): The Gmail message ID to retrieve
+            parse_body (bool): Whether to parse and include the message body (default: True)
 
         Returns:
-            Tuple[dict, list]: Complete parsed email message including body and list of attachment IDs
-            Tuple[None, list]: If retrieval or parsing fails, returns None for email and empty list for attachment IDs
+            Tuple[dict, dict]: Complete parsed email message including body and dict of attachments
+            Tuple[None, dict]: If retrieval or parsing fails, returns None for email and empty dict for attachments
         """
         try:
             # Fetch the complete message by ID
             message = self.service.users().messages().get(userId="me", id=email_id).execute()
 
             # Parse the message with body included
-            parsed_email = self._parse_message(txt=message, parse_body=True)
+            parsed_email = self._parse_message(txt=message, parse_body=parse_body)
 
             if parsed_email is None:
                 return None, {}

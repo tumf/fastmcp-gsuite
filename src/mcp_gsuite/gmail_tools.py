@@ -120,7 +120,7 @@ async def bulk_get_gmail_emails(
                 (
                     email_details,
                     attachments,
-                ) = gmail_service.get_email_by_id_with_attachments(email_id=email_id)
+                ) = gmail_service.get_email_by_id_with_attachments(email_id=email_id, parse_body=False)
                 if email_details:
                     full_details = {"email": email_details, "attachments": attachments}
                     results.append(full_details)
