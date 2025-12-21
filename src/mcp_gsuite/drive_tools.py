@@ -211,16 +211,17 @@ async def delete_drive_file(
             await ctx.info(f"Deleting file {file_id} for user {user_id}")
         drive_service = auth_helper.get_drive_service(user_id)
         drive_client = DriveService(drive_service)
-        success = drive_client.delete_file(file_id=file_id)
+        success, error_msg = drive_client.delete_file(file_id=file_id)
 
         if success:
             if ctx:
                 await ctx.info(f"Successfully deleted file with ID: {file_id}")
             return [TextContent(type="text", text=f"Successfully deleted file with ID: {file_id}")]
         else:
+            fail_msg = f"Failed to delete file with ID: {file_id}. Error: {error_msg}"
             if ctx:
-                await ctx.warning(f"Failed to delete file {file_id} for user {user_id}")
-            return [TextContent(type="text", text=f"Failed to delete file with ID: {file_id}")]
+                await ctx.warning(fail_msg)
+            return [TextContent(type="text", text=fail_msg)]
     except Exception as e:
         logger.error(f"Error in delete_drive_file for {user_id}: {e}", exc_info=True)
         error_msg = f"Error deleting file: {e}"
@@ -483,16 +484,17 @@ async def delete_drive_folder(
                 await ctx.error(error_msg)
             return [TextContent(type="text", text=error_msg)]
 
-        success = drive_client.delete_file(file_id=folder_id)
+        success, error_msg = drive_client.delete_file(file_id=folder_id)
 
         if success:
             if ctx:
                 await ctx.info(f"Successfully deleted folder with ID: {folder_id}")
             return [TextContent(type="text", text=f"Successfully deleted folder with ID: {folder_id}")]
         else:
+            fail_msg = f"Failed to delete folder with ID: {folder_id}. Error: {error_msg}"
             if ctx:
-                await ctx.warning(f"Failed to delete folder {folder_id} for user {user_id}")
-            return [TextContent(type="text", text=f"Failed to delete folder with ID: {folder_id}")]
+                await ctx.warning(fail_msg)
+            return [TextContent(type="text", text=fail_msg)]
     except Exception as e:
         logger.error(f"Error in delete_drive_folder for {user_id}: {e}", exc_info=True)
         error_msg = f"Error deleting folder: {e}"

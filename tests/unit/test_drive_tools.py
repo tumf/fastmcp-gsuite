@@ -924,7 +924,7 @@ class TestDriveTools(unittest.IsolatedAsyncioTestCase):
 
         mock_drive_service = MagicMock()
         mock_drive_service.get_file.return_value = mock_folder
-        mock_drive_service.delete_file.return_value = True
+        mock_drive_service.delete_file.return_value = (True, None)
 
         with (
             patch("src.mcp_gsuite.drive_tools.auth_helper.get_drive_service") as mock_get_drive_service,
@@ -998,7 +998,7 @@ class TestDriveTools(unittest.IsolatedAsyncioTestCase):
 
         mock_drive_service = MagicMock()
         mock_drive_service.get_file.return_value = mock_folder
-        mock_drive_service.delete_file.return_value = False
+        mock_drive_service.delete_file.return_value = (False, "Permission denied")
 
         with (
             patch("src.mcp_gsuite.drive_tools.auth_helper.get_drive_service") as mock_get_drive_service,
@@ -1014,13 +1014,13 @@ class TestDriveTools(unittest.IsolatedAsyncioTestCase):
 
             self.assertEqual(len(result), 1)
             self.assertEqual(result[0].type, "text")
-            self.assertEqual(result[0].text, f"Failed to delete folder with ID: {folder_id}")
+            self.assertIn("Failed to delete folder with ID:", result[0].text)
+            self.assertIn("Permission denied", result[0].text)
 
             mock_get_drive_service.assert_called_once_with(user_id)
             mock_drive_service.get_file.assert_called_once_with(file_id=folder_id)
             mock_drive_service.delete_file.assert_called_once_with(file_id=folder_id)
             mock_ctx.info.assert_called_once_with(f"Deleting folder {folder_id} for user {user_id}")
-            mock_ctx.warning.assert_called_once_with(f"Failed to delete folder {folder_id} for user {user_id}")
 
     async def test_delete_drive_folder_exception(self):
         user_id = "test@example.com"

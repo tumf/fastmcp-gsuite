@@ -225,7 +225,7 @@ class DriveService:
             logging.error(traceback.format_exc())
             return None
 
-    def delete_file(self, file_id: str) -> bool:
+    def delete_file(self, file_id: str) -> tuple[bool, str | None]:
         """
         Delete a file from Google Drive.
 
@@ -233,15 +233,18 @@ class DriveService:
             file_id (str): ID of the file to delete
 
         Returns:
-            bool: True if deletion was successful, False otherwise
+            tuple[bool, str | None]: (success, error_message)
+                - (True, None) if deletion was successful
+                - (False, error_message) if deletion failed
         """
         try:
             self.service.files().delete(fileId=file_id).execute()
-            return True
+            return True, None
         except Exception as e:
-            logging.error(f"Error deleting file {file_id}: {e!s}")
+            error_msg = str(e)
+            logging.error(f"Error deleting file {file_id}: {error_msg}")
             logging.error(traceback.format_exc())
-            return False
+            return False, error_msg
 
     def rename_file(self, file_id: str, new_name: str) -> dict | None:
         """
