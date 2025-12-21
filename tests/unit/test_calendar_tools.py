@@ -11,7 +11,7 @@ from src.mcp_gsuite.calendar_tools import (
 from tests.unit.mocks.context_mock import MockContext
 
 
-class TestCalendarTools(unittest.TestCase):
+class TestCalendarTools(unittest.IsolatedAsyncioTestCase):
     """Test cases for Calendar MCP tools."""
 
     def setUp(self):

@@ -9,7 +9,7 @@ from src.mcp_gsuite.gmail_drive_tools import (
 from tests.unit.mocks.context_mock import MockContext
 
 
-class TestGmailDriveTools(unittest.TestCase):
+class TestGmailDriveTools(unittest.IsolatedAsyncioTestCase):
     """Test cases for Gmail to Drive MCP tools."""
 
     def setUp(self):

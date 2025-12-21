@@ -16,7 +16,7 @@ from src.mcp_gsuite.gmail_tools import (
 from tests.unit.mocks.context_mock import MockContext
 
 
-class TestGmailTools(unittest.TestCase):
+class TestGmailTools(unittest.IsolatedAsyncioTestCase):
     """Test cases for Gmail MCP tools."""
 
     def setUp(self):
