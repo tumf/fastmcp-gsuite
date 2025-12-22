@@ -219,6 +219,9 @@ async def delete_drive_file(
             return [TextContent(type="text", text=f"Successfully deleted file with ID: {file_id}")]
         else:
             fail_msg = f"Failed to delete file with ID: {file_id}. Error: {error_msg}"
+            # Add helpful tip for permission errors
+            if error_msg and "insufficientFilePermissions" in error_msg:
+                fail_msg += " Tip: You may not own this file. Try using trash_drive_file instead."
             if ctx:
                 await ctx.warning(fail_msg)
             return [TextContent(type="text", text=fail_msg)]
@@ -492,12 +495,114 @@ async def delete_drive_folder(
             return [TextContent(type="text", text=f"Successfully deleted folder with ID: {folder_id}")]
         else:
             fail_msg = f"Failed to delete folder with ID: {folder_id}. Error: {error_msg}"
+            # Add helpful tip for permission errors
+            if error_msg and "insufficientFilePermissions" in error_msg:
+                fail_msg += " Tip: You may not own this folder. Try using trash_drive_folder instead."
             if ctx:
                 await ctx.warning(fail_msg)
             return [TextContent(type="text", text=fail_msg)]
     except Exception as e:
         logger.error(f"Error in delete_drive_folder for {user_id}: {e}", exc_info=True)
         error_msg = f"Error deleting folder: {e}"
+        if ctx:
+            await ctx.error(error_msg)
+        raise RuntimeError(error_msg) from e
+
+
+async def trash_drive_file(
+    user_id: Annotated[str, get_user_id_description()],
+    file_id: Annotated[str, "ID of the file to move to trash."],
+    ctx: Context | None = None,
+) -> list[TextContent]:
+    """Moves a file to Google Drive trash (soft delete)."""
+    try:
+        if ctx:
+            await ctx.info(f"Moving file {file_id} to trash for user {user_id}")
+        drive_service = auth_helper.get_drive_service(user_id)
+        drive_client = DriveService(drive_service)
+        success, error_msg = drive_client.trash_file(file_id=file_id)
+
+        if success:
+            if ctx:
+                await ctx.info(f"Successfully moved file to trash: {file_id}")
+            return [TextContent(type="text", text=f"Successfully moved file to trash: {file_id}")]
+        else:
+            fail_msg = f"Failed to trash file with ID: {file_id}. Error: {error_msg}"
+            if ctx:
+                await ctx.warning(fail_msg)
+            return [TextContent(type="text", text=fail_msg)]
+    except Exception as e:
+        logger.error(f"Error in trash_drive_file for {user_id}: {e}", exc_info=True)
+        error_msg = f"Error trashing file: {e}"
+        if ctx:
+            await ctx.error(error_msg)
+        raise RuntimeError(error_msg) from e
+
+
+async def trash_drive_folder(
+    user_id: Annotated[str, get_user_id_description()],
+    folder_id: Annotated[str, "ID of the folder to move to trash."],
+    ctx: Context | None = None,
+) -> list[TextContent]:
+    """Moves a folder to Google Drive trash (soft delete)."""
+    try:
+        if ctx:
+            await ctx.info(f"Moving folder {folder_id} to trash for user {user_id}")
+
+        drive_service = auth_helper.get_drive_service(user_id)
+        drive_client = DriveService(drive_service)
+
+        folder = drive_client.get_file(file_id=folder_id)
+        if not folder or folder.get("mimeType") != FOLDER_MIME_TYPE:
+            error_msg = f"Item with ID {folder_id} is not a folder."
+            if ctx:
+                await ctx.error(error_msg)
+            return [TextContent(type="text", text=error_msg)]
+
+        success, error_msg = drive_client.trash_file(file_id=folder_id)
+
+        if success:
+            if ctx:
+                await ctx.info(f"Successfully moved folder to trash: {folder_id}")
+            return [TextContent(type="text", text=f"Successfully moved folder to trash: {folder_id}")]
+        else:
+            fail_msg = f"Failed to trash folder with ID: {folder_id}. Error: {error_msg}"
+            if ctx:
+                await ctx.warning(fail_msg)
+            return [TextContent(type="text", text=fail_msg)]
+    except Exception as e:
+        logger.error(f"Error in trash_drive_folder for {user_id}: {e}", exc_info=True)
+        error_msg = f"Error trashing folder: {e}"
+        if ctx:
+            await ctx.error(error_msg)
+        raise RuntimeError(error_msg) from e
+
+
+async def untrash_drive_file(
+    user_id: Annotated[str, get_user_id_description()],
+    file_id: Annotated[str, "ID of the file to restore from trash."],
+    ctx: Context | None = None,
+) -> list[TextContent]:
+    """Restores a file from Google Drive trash."""
+    try:
+        if ctx:
+            await ctx.info(f"Restoring file {file_id} from trash for user {user_id}")
+        drive_service = auth_helper.get_drive_service(user_id)
+        drive_client = DriveService(drive_service)
+        success, error_msg = drive_client.untrash_file(file_id=file_id)
+
+        if success:
+            if ctx:
+                await ctx.info(f"Successfully restored file from trash: {file_id}")
+            return [TextContent(type="text", text=f"Successfully restored file from trash: {file_id}")]
+        else:
+            fail_msg = f"Failed to restore file with ID: {file_id}. Error: {error_msg}"
+            if ctx:
+                await ctx.warning(fail_msg)
+            return [TextContent(type="text", text=fail_msg)]
+    except Exception as e:
+        logger.error(f"Error in untrash_drive_file for {user_id}: {e}", exc_info=True)
+        error_msg = f"Error restoring file: {e}"
         if ctx:
             await ctx.error(error_msg)
         raise RuntimeError(error_msg) from e

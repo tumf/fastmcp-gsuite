@@ -17,6 +17,9 @@ from .drive_tools import (
     move_drive_folder,
     rename_drive_file,
     rename_drive_folder,
+    trash_drive_file,
+    trash_drive_folder,
+    untrash_drive_file,
     upload_drive_file,
 )
 from .gmail_drive_tools import (
@@ -135,6 +138,13 @@ mcp.tool(description="Rename a folder in Google Drive.")(rename_drive_folder)
 mcp.tool(description="Move a folder to a different location in Google Drive.")(move_drive_folder)
 
 mcp.tool(description="Delete a folder from Google Drive.")(delete_drive_folder)
+
+# Register Drive trash tools
+mcp.tool(description="Move a file to Google Drive trash (soft delete).")(trash_drive_file)
+
+mcp.tool(description="Move a folder to Google Drive trash (soft delete).")(trash_drive_folder)
+
+mcp.tool(description="Restore a file from Google Drive trash.")(untrash_drive_file)
 
 # Register Gmail to Drive tools
 mcp.tool(description="Save a Gmail attachment to Google Drive.")(save_gmail_attachment_to_drive)

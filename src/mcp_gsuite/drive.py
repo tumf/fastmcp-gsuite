@@ -246,6 +246,56 @@ class DriveService:
             logging.error(traceback.format_exc())
             return False, error_msg
 
+    def trash_file(self, file_id: str) -> tuple[bool, str | None]:
+        """
+        Move a file to Google Drive trash (soft delete).
+
+        Args:
+            file_id (str): ID of the file to trash
+
+        Returns:
+            tuple[bool, str | None]: (success, error_message)
+                - (True, None) if trashing was successful
+                - (False, error_message) if trashing failed
+        """
+        try:
+            self.service.files().update(
+                fileId=file_id,
+                body={"trashed": True},
+                fields=FILE_FIELDS,
+            ).execute()
+            return True, None
+        except Exception as e:
+            error_msg = str(e)
+            logging.error(f"Error trashing file {file_id}: {error_msg}")
+            logging.error(traceback.format_exc())
+            return False, error_msg
+
+    def untrash_file(self, file_id: str) -> tuple[bool, str | None]:
+        """
+        Restore a file from Google Drive trash.
+
+        Args:
+            file_id (str): ID of the file to restore
+
+        Returns:
+            tuple[bool, str | None]: (success, error_message)
+                - (True, None) if restoring was successful
+                - (False, error_message) if restoring failed
+        """
+        try:
+            self.service.files().update(
+                fileId=file_id,
+                body={"trashed": False},
+                fields=FILE_FIELDS,
+            ).execute()
+            return True, None
+        except Exception as e:
+            error_msg = str(e)
+            logging.error(f"Error restoring file {file_id}: {error_msg}")
+            logging.error(traceback.format_exc())
+            return False, error_msg
+
     def rename_file(self, file_id: str, new_name: str) -> dict | None:
         """
         Rename a file in Google Drive.

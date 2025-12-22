@@ -135,5 +135,52 @@ class TestDriveService(unittest.TestCase):
         self.assertIsNone(result)
 
 
+    def test_trash_file_success(self):
+        mock_update = MagicMock()
+        self.mock_files.update.return_value = mock_update
+        mock_update.execute.return_value = {"id": "file1", "trashed": True}
+
+        success, error = self.drive_service.trash_file(file_id="file1")
+
+        self.assertTrue(success)
+        self.assertIsNone(error)
+        self.mock_files.update.assert_called_once()
+
+    def test_trash_file_exception(self):
+        mock_update = MagicMock()
+        self.mock_files.update.return_value = mock_update
+        mock_update.execute.side_effect = Exception("Permission denied")
+
+        success, error = self.drive_service.trash_file(file_id="file1")
+
+        self.assertFalse(success)
+        self.assertIsNotNone(error)
+        assert error is not None  # for type narrowing
+        self.assertIn("Permission denied", error)
+
+    def test_untrash_file_success(self):
+        mock_update = MagicMock()
+        self.mock_files.update.return_value = mock_update
+        mock_update.execute.return_value = {"id": "file1", "trashed": False}
+
+        success, error = self.drive_service.untrash_file(file_id="file1")
+
+        self.assertTrue(success)
+        self.assertIsNone(error)
+        self.mock_files.update.assert_called_once()
+
+    def test_untrash_file_exception(self):
+        mock_update = MagicMock()
+        self.mock_files.update.return_value = mock_update
+        mock_update.execute.side_effect = Exception("File not found")
+
+        success, error = self.drive_service.untrash_file(file_id="file1")
+
+        self.assertFalse(success)
+        self.assertIsNotNone(error)
+        assert error is not None  # for type narrowing
+        self.assertIn("File not found", error)
+
+
 if __name__ == "__main__":
     unittest.main()
