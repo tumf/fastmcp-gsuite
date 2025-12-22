@@ -62,8 +62,11 @@ def setup_client_credentials() -> dict[str, str]:
     return {"client_id": client_id, "client_secret": client_secret}
 
 
-def collect_account_info() -> gauth.AccountInfo:
+def collect_account_info(email: str | None = None) -> gauth.AccountInfo:
     """Collect account information from user input.
+
+    Args:
+        email: Optional email address (skips email prompt if provided)
 
     Returns:
         AccountInfo object with email, account_type, and extra_info
@@ -72,11 +75,17 @@ def collect_account_info() -> gauth.AccountInfo:
     print("-" * 50)
 
     # Validate email format
-    while True:
-        email = input("Enter account email: ").strip()
-        if "@" in email and len(email) > 3:
-            break
-        print("Error: Invalid email format. Please enter a valid email address.")
+    if email:
+        if "@" not in email or len(email) <= 3:
+            print(f"Error: Invalid email format: {email}")
+            raise ValueError(f"Invalid email format: {email}")
+        print(f"Email: {email}")
+    else:
+        while True:
+            email = input("Enter account email: ").strip()
+            if "@" in email and len(email) > 3:
+                break
+            print("Error: Invalid email format. Please enter a valid email address.")
 
     account_type = input("Account type (personal/work): ").strip() or "personal"
     extra_info = input("Extra info (optional): ").strip()
@@ -298,11 +307,12 @@ def remove_account(email: str) -> bool:
         return False
 
 
-def run_setup(add_account: bool = False) -> int:
+def run_setup(add_account: bool = False, email: str | None = None) -> int:
     """Run the interactive setup flow.
 
     Args:
         add_account: If True, skip client credentials and only add account
+        email: Optional email address to use (skips email prompt)
 
     Returns:
         Exit code (0 for success, 1 for error)
@@ -335,7 +345,7 @@ def run_setup(add_account: bool = False) -> int:
     while True:
         try:
             # Collect account info
-            account_info = collect_account_info()
+            account_info = collect_account_info(email=email)
 
             # Authorize account
             if authorize_account(account_info):
@@ -383,23 +393,29 @@ def main() -> int:
         epilog="""
 Examples:
   # First-time setup
-  uv run fastmcp-gsuite setup
+  uv run fastmcp-gsuite-setup
 
-  # Add another account
-  uv run fastmcp-gsuite setup --add-account
+  # Add another account (interactive)
+  uv run fastmcp-gsuite-setup --add-account
+
+  # Add account with email specified
+  uv run fastmcp-gsuite-setup --add-account user@example.com
 
   # List configured accounts
-  uv run fastmcp-gsuite setup --list
+  uv run fastmcp-gsuite-setup --list
 
   # Remove an account
-  uv run fastmcp-gsuite setup --remove-account user@example.com
+  uv run fastmcp-gsuite-setup --remove-account user@example.com
 """,
     )
 
     parser.add_argument(
         "--add-account",
-        action="store_true",
-        help="Add a new account to existing configuration",
+        nargs="?",
+        const=True,
+        default=False,
+        metavar="EMAIL",
+        help="Add a new account (optionally specify email address)",
     )
 
     parser.add_argument(
@@ -420,8 +436,17 @@ Examples:
     if args.remove_account:
         return 0 if remove_account(args.remove_account) else 1
 
+    # Determine email if provided via --add-account
+    email = None
+    add_account_mode = False
+    if args.add_account is True:
+        add_account_mode = True
+    elif args.add_account:
+        add_account_mode = True
+        email = args.add_account
+
     # Run setup (either full setup or add-account)
-    return run_setup(add_account=args.add_account)
+    return run_setup(add_account=add_account_mode, email=email)
 
 
 if __name__ == "__main__":
