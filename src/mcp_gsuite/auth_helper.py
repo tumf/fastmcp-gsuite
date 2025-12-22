@@ -29,6 +29,22 @@ def get_authenticated_service(service_name: str, version: str, user_id: str, sco
         logger.error(f"No stored OAuth2 credentials found for {user_id}. Please run the authentication flow first.")
         raise RuntimeError(f"No stored OAuth2 credentials found for {user_id}. Please run the authentication flow.")
 
+    # Refresh credentials if expired
+    if credentials.access_token_expired:
+        try:
+            import httplib2
+
+            http = httplib2.Http()
+            credentials.refresh(http)
+            # Store refreshed credentials
+            from .gauth import store_credentials
+
+            store_credentials(credentials, user_id=user_id)
+            logger.info(f"Refreshed and stored credentials for {user_id}")
+        except Exception as e:
+            logger.error(f"Failed to refresh credentials for {user_id}: {e}")
+            raise RuntimeError(f"Failed to refresh credentials for {user_id}. Please re-authenticate.") from e
+
     try:
         service = build(service_name, version, credentials=credentials)
         logger.info(f"Successfully built Google service {service_name} v{version} for {user_id}")
