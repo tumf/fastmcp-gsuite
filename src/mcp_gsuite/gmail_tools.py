@@ -45,9 +45,18 @@ async def query_gmail_emails(
 async def get_email_details(
     user_id: Annotated[str, get_user_id_description()],
     email_id: Annotated[str, "The unique ID of the Gmail email message."],
+    body_offset: Annotated[int, "Starting position for body text (0-based). Use with body_limit for pagination."] = 0,
+    body_limit: Annotated[
+        int, "Maximum number of characters to return for body text. Default 5000. Use 0 to exclude body entirely."
+    ] = 5000,
     ctx: Context | None = None,
 ) -> list[TextContent]:
-    """Retrieves detailed information for a single email, including body and attachments."""
+    """Retrieves detailed information for a single email, including body and attachments.
+
+    The body text is paginated to avoid large responses. Use body_offset and body_limit
+    to retrieve the full body in chunks if needed. The response includes body_total_length
+    and body_has_more to help with pagination.
+    """
     try:
         if ctx:
             await ctx.info(f"Fetching details for email ID {email_id} for user {user_id}")
@@ -60,9 +69,31 @@ async def get_email_details(
                 await ctx.warning(f"Email with ID {email_id} not found for user {user_id}")
             return [TextContent(type="text", text=f"Email with ID {email_id} not found.")]
 
+        # Handle body pagination
+        body_total_length = 0
+        body_has_more = False
+        if email_details.get("body"):
+            full_body = email_details["body"]
+            body_total_length = len(full_body)
+
+            if body_limit == 0:
+                # Exclude body entirely
+                email_details["body"] = None
+            else:
+                # Apply offset and limit
+                end_pos = body_offset + body_limit
+                email_details["body"] = full_body[body_offset:end_pos]
+                body_has_more = end_pos < body_total_length
+
         full_details = {
             "email": email_details,
-            "attachments": attachments,  # Dictionary of attachment metadata keyed by partId
+            "attachments": attachments,
+            "body_pagination": {
+                "offset": body_offset,
+                "limit": body_limit,
+                "total_length": body_total_length,
+                "has_more": body_has_more,
+            },
         }
 
         return [TextContent(type="text", text=json.dumps(full_details, indent=2))]

@@ -38,6 +38,7 @@ class TestGmailTools(unittest.IsolatedAsyncioTestCase):
             "to": "recipient@example.com",
             "date": "2023-01-01T12:00:00Z",
             "snippet": "This is a test email",
+            "body": "This is the full body of the test email.",
         }
 
         self.sample_attachment = {
@@ -123,17 +124,80 @@ class TestGmailTools(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].type, "text")
-        expected_result = {
-            "email": self.sample_email,
-            "attachments": {"attachment1": self.sample_attachment},
-        }
-        self.assertEqual(json.loads(result[0].text), expected_result)
+        result_data = json.loads(result[0].text)
+        self.assertEqual(result_data["email"]["id"], self.sample_email["id"])
+        self.assertEqual(result_data["attachments"], {"attachment1": self.sample_attachment})
+        # Check body pagination info
+        self.assertIn("body_pagination", result_data)
+        self.assertEqual(result_data["body_pagination"]["offset"], 0)
+        self.assertEqual(result_data["body_pagination"]["limit"], 5000)
+        self.assertEqual(result_data["body_pagination"]["total_length"], len(self.sample_email["body"]))
+        self.assertFalse(result_data["body_pagination"]["has_more"])
 
         mock_get_gmail_service.assert_called_once_with(self.test_user_id)
         mock_gmail_service_class.assert_called_once_with(mock_service)
         mock_gmail_service_instance.get_email_by_id_with_attachments.assert_called_once_with(
             email_id=self.test_email_id
         )
+
+    @patch("src.mcp_gsuite.gmail_tools.auth_helper.get_gmail_service")
+    @patch("src.mcp_gsuite.gmail_tools.gmail_impl.GmailService")
+    async def test_get_email_details_with_body_pagination(self, mock_gmail_service_class, mock_get_gmail_service):
+        """Test email details with body pagination (offset and limit)."""
+        mock_service = MagicMock()
+        mock_get_gmail_service.return_value = mock_service
+        mock_gmail_service_instance = mock_gmail_service_class.return_value
+
+        # Create email with long body
+        long_body = "A" * 100  # 100 character body
+        email_with_long_body = {**self.sample_email, "body": long_body}
+        mock_gmail_service_instance.get_email_by_id_with_attachments.return_value = (
+            email_with_long_body,
+            {},
+        )
+
+        # Test with offset=10, limit=20
+        result = await get_email_details(
+            user_id=self.test_user_id,
+            email_id=self.test_email_id,
+            body_offset=10,
+            body_limit=20,
+            ctx=self.mock_context,  # type: ignore
+        )
+
+        result_data = json.loads(result[0].text)
+        self.assertEqual(result_data["email"]["body"], "A" * 20)  # 20 chars from position 10
+        self.assertEqual(result_data["body_pagination"]["offset"], 10)
+        self.assertEqual(result_data["body_pagination"]["limit"], 20)
+        self.assertEqual(result_data["body_pagination"]["total_length"], 100)
+        self.assertTrue(result_data["body_pagination"]["has_more"])  # 70 more chars remaining
+
+    @patch("src.mcp_gsuite.gmail_tools.auth_helper.get_gmail_service")
+    @patch("src.mcp_gsuite.gmail_tools.gmail_impl.GmailService")
+    async def test_get_email_details_exclude_body(self, mock_gmail_service_class, mock_get_gmail_service):
+        """Test email details with body excluded (body_limit=0)."""
+        mock_service = MagicMock()
+        mock_get_gmail_service.return_value = mock_service
+        mock_gmail_service_instance = mock_gmail_service_class.return_value
+
+        # Use a copy to avoid mutation
+        email_copy = {**self.sample_email}
+        original_body_length = len(email_copy["body"])
+        mock_gmail_service_instance.get_email_by_id_with_attachments.return_value = (
+            email_copy,
+            {},
+        )
+
+        result = await get_email_details(
+            user_id=self.test_user_id,
+            email_id=self.test_email_id,
+            body_limit=0,
+            ctx=self.mock_context,  # type: ignore
+        )
+
+        result_data = json.loads(result[0].text)
+        self.assertIsNone(result_data["email"]["body"])
+        self.assertEqual(result_data["body_pagination"]["total_length"], original_body_length)
 
     @patch("src.mcp_gsuite.gmail_tools.auth_helper.get_gmail_service")
     @patch("src.mcp_gsuite.gmail_tools.gmail_impl.GmailService")
