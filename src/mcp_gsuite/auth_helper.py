@@ -8,9 +8,52 @@ from .gauth import get_stored_credentials
 logger = logging.getLogger(__name__)
 
 
+def _refresh_credentials_if_needed(credentials, user_id: str):
+    """
+    Refresh credentials if they are expired or about to expire.
+
+    Args:
+        credentials: OAuth2Credentials instance to check and refresh.
+        user_id: The email address (user ID) for storing refreshed credentials.
+
+    Returns:
+        Refreshed credentials or original credentials if still valid.
+
+    Raises:
+        RuntimeError: If credentials cannot be refreshed.
+    """
+    if not credentials.access_token_expired:
+        return credentials
+
+    logger.info(f"Access token expired for {user_id}, attempting to refresh...")
+
+    if not credentials.refresh_token:
+        logger.error(f"No refresh token available for {user_id}. Re-authentication required.")
+        raise RuntimeError(f"No refresh token available for {user_id}. Please re-authenticate.")
+
+    try:
+        import httplib2
+
+        http = httplib2.Http()
+        credentials.refresh(http)
+        # Store refreshed credentials
+        from .gauth import store_credentials
+
+        store_credentials(credentials, user_id=user_id)
+        logger.info(f"Successfully refreshed and stored credentials for {user_id}")
+        return credentials
+    except Exception as e:
+        logger.error(f"Failed to refresh credentials for {user_id}: {e}")
+        raise RuntimeError(f"Failed to refresh credentials for {user_id}. Please re-authenticate.") from e
+
+
 def get_authenticated_service(service_name: str, version: str, user_id: str, scopes: list[str]):
     """
     Retrieves stored credentials, refreshes if necessary, and builds an authenticated Google API service client.
+
+    This function handles token expiration by:
+    1. Proactively refreshing tokens that are expired or about to expire
+    2. Storing refreshed credentials for future use
 
     Args:
         service_name: The name of the Google API service (e.g., 'gmail', 'calendar').
@@ -24,26 +67,13 @@ def get_authenticated_service(service_name: str, version: str, user_id: str, sco
     Raises:
         RuntimeError: If credentials are not found or cannot be refreshed/used.
     """
-    credentials = get_stored_credentials(user_id=user_id)  # Uses settings internally now
+    credentials = get_stored_credentials(user_id=user_id)
     if not credentials:
         logger.error(f"No stored OAuth2 credentials found for {user_id}. Please run the authentication flow first.")
         raise RuntimeError(f"No stored OAuth2 credentials found for {user_id}. Please run the authentication flow.")
 
-    # Refresh credentials if expired
-    if credentials.access_token_expired:
-        try:
-            import httplib2
-
-            http = httplib2.Http()
-            credentials.refresh(http)
-            # Store refreshed credentials
-            from .gauth import store_credentials
-
-            store_credentials(credentials, user_id=user_id)
-            logger.info(f"Refreshed and stored credentials for {user_id}")
-        except Exception as e:
-            logger.error(f"Failed to refresh credentials for {user_id}: {e}")
-            raise RuntimeError(f"Failed to refresh credentials for {user_id}. Please re-authenticate.") from e
+    # Refresh credentials if expired or about to expire
+    credentials = _refresh_credentials_if_needed(credentials, user_id)
 
     try:
         service = build(service_name, version, credentials=credentials)
@@ -51,7 +81,6 @@ def get_authenticated_service(service_name: str, version: str, user_id: str, sco
         return service
     except Exception as e:
         logger.error(f"Failed to build Google service {service_name} v{version} for {user_id}: {e}")
-
         raise RuntimeError(f"Failed to build Google service for {user_id}.") from e
 
 
