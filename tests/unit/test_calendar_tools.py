@@ -7,6 +7,7 @@ from src.mcp_gsuite.calendar_tools import (
     delete_calendar_event,
     list_calendar_events,
     list_calendars,
+    update_calendar_event,
 )
 from tests.unit.mocks.context_mock import MockContext
 
@@ -206,3 +207,94 @@ class TestCalendarTools(unittest.IsolatedAsyncioTestCase):
         mock_get_calendar_service.assert_called_once_with(self.test_user_id)
         mock_calendar_service_class.assert_called_once_with(mock_service)
         mock_calendar_service_instance.list_calendars.assert_called_once()
+
+    @patch("src.mcp_gsuite.calendar_tools.auth_helper.get_calendar_service")
+    @patch("src.mcp_gsuite.calendar_tools.calendar_impl.CalendarService")
+    async def test_update_calendar_event_success(self, mock_calendar_service_class, mock_get_calendar_service):
+        """Test successful update of calendar event."""
+        mock_service = MagicMock()
+        mock_get_calendar_service.return_value = mock_service
+        mock_calendar_service_instance = mock_calendar_service_class.return_value
+
+        updated_event = {
+            "id": self.test_event_id,
+            "summary": "Updated Event",
+            "description": "Updated description",
+            "start": {"dateTime": "2023-01-01T10:00:00Z"},
+            "end": {"dateTime": "2023-01-01T11:00:00Z"},
+            "location": "Updated Location",
+        }
+        mock_calendar_service_instance.update_event.return_value = updated_event
+
+        result = await update_calendar_event(
+            user_id=self.test_user_id,
+            calendar_id=self.test_calendar_id,
+            event_id=self.test_event_id,
+            summary="Updated Event",
+            description="Updated description",
+            location="Updated Location",
+            ctx=self.mock_context,  # type: ignore
+        )
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].type, "text")
+        result_data = json.loads(result[0].text)
+        self.assertEqual(result_data["summary"], "Updated Event")
+        self.assertEqual(result_data["description"], "Updated description")
+        self.assertEqual(result_data["location"], "Updated Location")
+
+        mock_get_calendar_service.assert_called_once_with(self.test_user_id)
+        mock_calendar_service_class.assert_called_once_with(mock_service)
+        mock_calendar_service_instance.update_event.assert_called_once_with(
+            event_id=self.test_event_id,
+            summary="Updated Event",
+            start_time=None,
+            end_time=None,
+            location="Updated Location",
+            description="Updated description",
+            attendees=None,
+            timezone=None,
+            calendar_id=self.test_calendar_id,
+        )
+
+    @patch("src.mcp_gsuite.calendar_tools.auth_helper.get_calendar_service")
+    @patch("src.mcp_gsuite.calendar_tools.calendar_impl.CalendarService")
+    async def test_update_calendar_event_failure(self, mock_calendar_service_class, mock_get_calendar_service):
+        """Test update calendar event when update fails."""
+        mock_service = MagicMock()
+        mock_get_calendar_service.return_value = mock_service
+        mock_calendar_service_instance = mock_calendar_service_class.return_value
+        mock_calendar_service_instance.update_event.return_value = None
+
+        result = await update_calendar_event(
+            user_id=self.test_user_id,
+            calendar_id=self.test_calendar_id,
+            event_id=self.test_event_id,
+            summary="Updated Event",
+            ctx=self.mock_context,  # type: ignore
+        )
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].type, "text")
+        self.assertIn("Failed to update event ID", result[0].text)
+
+    @patch("src.mcp_gsuite.calendar_tools.auth_helper.get_calendar_service")
+    @patch("src.mcp_gsuite.calendar_tools.calendar_impl.CalendarService")
+    async def test_update_calendar_event_error(self, mock_calendar_service_class, mock_get_calendar_service):
+        """Test error handling in update_calendar_event."""
+        mock_service = MagicMock()
+        mock_get_calendar_service.return_value = mock_service
+        mock_calendar_service_instance = mock_calendar_service_class.return_value
+        mock_calendar_service_instance.update_event.side_effect = Exception("Test error")
+
+        with self.assertRaises(RuntimeError) as context:
+            await update_calendar_event(
+                user_id=self.test_user_id,
+                calendar_id=self.test_calendar_id,
+                event_id=self.test_event_id,
+                summary="Updated Event",
+                ctx=self.mock_context,  # type: ignore
+            )
+        self.assertTrue("Error updating calendar event: Test error" in str(context.exception))
+        self.assertEqual(len(self.mock_context.error_messages), 1)
+        self.assertTrue("Error updating calendar event: Test error" in self.mock_context.error_messages[0])

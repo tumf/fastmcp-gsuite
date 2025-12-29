@@ -161,3 +161,72 @@ async def delete_calendar_event(
         if ctx:
             await ctx.error(error_msg)
         raise RuntimeError(error_msg) from e
+
+
+async def update_calendar_event(
+    user_id: Annotated[str, get_user_id_description()],
+    calendar_id: Annotated[
+        str,
+        "The ID of the calendar containing the event (use 'primary' for the primary calendar).",
+    ],
+    event_id: Annotated[str, "The unique ID of the event to update."],
+    summary: Annotated[str | None, "New title/summary of the event."] = None,
+    start_time: Annotated[
+        str | None,
+        "New start time in RFC3339 format (e.g., '2024-01-15T09:00:00-05:00').",
+    ] = None,
+    end_time: Annotated[
+        str | None,
+        "New end time in RFC3339 format (e.g., '2024-01-15T10:00:00-05:00').",
+    ] = None,
+    location: Annotated[str | None, "New location of the event."] = None,
+    description: Annotated[str | None, "New description of the event."] = None,
+    attendees: Annotated[
+        list[str] | None,
+        "New list of attendee email addresses. This replaces the existing attendees.",
+    ] = None,
+    timezone: Annotated[
+        str | None,
+        "Timezone for the event (e.g., 'America/New_York', 'Asia/Tokyo').",
+    ] = None,
+    ctx: Context | None = None,
+) -> list[TextContent]:
+    """Updates an existing calendar event. Only provided fields will be updated."""
+    try:
+        if ctx:
+            await ctx.info(f"Updating event ID {event_id} for {user_id} in calendar {calendar_id}")
+
+        c_service = auth_helper.get_calendar_service(user_id)
+        calendar_service = calendar_impl.CalendarService(c_service)
+
+        updated_event = calendar_service.update_event(
+            event_id=event_id,
+            summary=summary,
+            start_time=start_time,
+            end_time=end_time,
+            location=location,
+            description=description,
+            attendees=attendees,
+            timezone=timezone,
+            calendar_id=calendar_id,
+        )
+
+        if updated_event:
+            if ctx:
+                await ctx.info(f"Successfully updated event ID {event_id}")
+            return [
+                TextContent(
+                    type="text",
+                    text=json.dumps(updated_event, indent=2, ensure_ascii=False),
+                )
+            ]
+        else:
+            if ctx:
+                await ctx.warning(f"Failed to update event ID {event_id} for user {user_id}")
+            return [TextContent(type="text", text=f"Failed to update event ID: {event_id}")]
+    except Exception as e:
+        logger.error(f"Error in update_calendar_event for {user_id}: {e}", exc_info=True)
+        error_msg = f"Error updating calendar event: {e}"
+        if ctx:
+            await ctx.error(error_msg)
+        raise RuntimeError(error_msg) from e

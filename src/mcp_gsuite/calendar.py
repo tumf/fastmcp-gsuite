@@ -188,3 +188,86 @@ class CalendarService:
             logging.error(f"Error deleting calendar event {event_id}: {e!s}")
             logging.error(traceback.format_exc())
             return False
+
+    def update_event(
+        self,
+        event_id: str,
+        summary: str | None = None,
+        start_time: str | None = None,
+        end_time: str | None = None,
+        location: str | None = None,
+        description: str | None = None,
+        attendees: list | None = None,
+        send_notifications: bool = True,
+        timezone: str | None = None,
+        calendar_id: str = "primary",
+    ) -> dict | None:
+        """
+        Update an existing calendar event.
+
+        Args:
+            event_id (str): The ID of the event to update
+            summary (str, optional): New title of the event
+            start_time (str, optional): New start time in RFC3339 format
+            end_time (str, optional): New end time in RFC3339 format
+            location (str, optional): New location of the event
+            description (str, optional): New description of the event
+            attendees (list, optional): New list of attendee email addresses
+            send_notifications (bool): Whether to send notifications to attendees
+            timezone (str, optional): Timezone for the event (e.g. 'America/New_York')
+            calendar_id (str): Calendar ID (default: 'primary')
+
+        Returns:
+            dict: Updated event data or None if update fails
+        """
+        try:
+            # First, get the existing event
+            existing_event = (
+                self.service.events().get(calendarId=calendar_id, eventId=event_id).execute()
+            )
+
+            # Update fields if provided
+            if summary is not None:
+                existing_event["summary"] = summary
+            if location is not None:
+                existing_event["location"] = location
+            if description is not None:
+                existing_event["description"] = description
+            if attendees is not None:
+                existing_event["attendees"] = [{"email": email} for email in attendees]
+
+            # Update time fields if provided
+            if start_time is not None:
+                existing_event["start"] = {
+                    "dateTime": start_time,
+                    "timeZone": timezone or existing_event.get("start", {}).get("timeZone", "UTC"),
+                }
+            elif timezone is not None and "start" in existing_event:
+                existing_event["start"]["timeZone"] = timezone
+
+            if end_time is not None:
+                existing_event["end"] = {
+                    "dateTime": end_time,
+                    "timeZone": timezone or existing_event.get("end", {}).get("timeZone", "UTC"),
+                }
+            elif timezone is not None and "end" in existing_event:
+                existing_event["end"]["timeZone"] = timezone
+
+            # Update the event
+            updated_event = (
+                self.service.events()
+                .update(
+                    calendarId=calendar_id,
+                    eventId=event_id,
+                    body=existing_event,
+                    sendNotifications=send_notifications,
+                )
+                .execute()
+            )
+
+            return updated_event
+
+        except Exception as e:
+            logging.error(f"Error updating calendar event {event_id}: {e!s}")
+            logging.error(traceback.format_exc())
+            return None

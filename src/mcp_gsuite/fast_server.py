@@ -3,7 +3,13 @@ import logging
 from fastmcp import FastMCP
 
 from . import auth_helper
-from .calendar_tools import create_calendar_event, delete_calendar_event, list_calendar_events, list_calendars
+from .calendar_tools import (
+    create_calendar_event,
+    delete_calendar_event,
+    list_calendar_events,
+    list_calendars,
+    update_calendar_event,
+)
 from .drive_tools import (
     copy_drive_file,
     create_drive_folder,
@@ -110,6 +116,10 @@ mcp.tool(description="List events from a specific calendar within a given time r
 mcp.tool(description="Create a new event in a specified calendar.")(create_calendar_event)
 
 mcp.tool(description="Delete an event from a calendar.")(delete_calendar_event)
+
+mcp.tool(description="Update an existing event in a calendar. Only provided fields will be updated.")(
+    update_calendar_event
+)
 
 # Register Drive tools
 mcp.tool(description="List files in the user's Google Drive with optional filtering by search query.")(list_drive_files)
