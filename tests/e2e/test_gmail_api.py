@@ -103,7 +103,7 @@ class TestGmailAPI:
 
         # 最初のメッセージの詳細を取得
         message_id = messages[0].get("id")
-        email_body, attachments = self.gmail.get_email_by_id_with_attachments(message_id)
+        email_body, _attachments = self.gmail.get_email_by_id_with_attachments(message_id)
 
         # メッセージの内容を確認 (email_bodyがNoneでないことを確認)
         assert email_body is not None, "メールの内容が取得できませんでした"

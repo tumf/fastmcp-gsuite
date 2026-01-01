@@ -6,6 +6,8 @@ MCP server to interact with Google products, rewritten using the `fastmcp` libra
 
 This project is a fork of [mcp-gsuite](https://github.com/MarkusPfundstein/mcp-gsuite).
 
+* [My tech blog article](https://blog.tumf.dev/posts/diary/2025/12/31/fastmcp-gsuite-2-weeks-update/)
+
 ## Example prompts
 
 Right now, this MCP server supports Gmail and Calendar integration with the following capabilities:
@@ -450,9 +452,3 @@ dotenvx run -f .env.local -- uv run make mcp-contacts-e2e-tests
 - E2E tests access real Google accounts, so be careful not to affect production environments
 - E2E tests are automatically skipped in CI environments
 - Temporary authentication files are created during test execution but are automatically deleted afterward
-
-## License
-
-# Test push hook
-
-# Test push hook
