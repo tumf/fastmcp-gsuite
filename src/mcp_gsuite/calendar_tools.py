@@ -89,6 +89,26 @@ async def create_calendar_event(
     description: Annotated[str | None, "Optional description or details for the event."] = None,
     location: Annotated[str | None, "Optional location for the event."] = None,
     attendees: Annotated[list[str] | None, "Optional list of attendee email addresses."] = None,
+    timezone: Annotated[
+        str | None,
+        "IANA timezone name (e.g., 'America/Los_Angeles'). Defaults to UTC if omitted.",
+    ] = None,
+    transparency: Annotated[
+        str | None,
+        "Event visibility: 'transparent' (show as free) or 'opaque' (show as busy).",
+    ] = None,
+    reminders: Annotated[
+        dict | None,
+        "Reminder config, e.g. {\"useDefault\": false, \"overrides\": []} to disable all reminders.",
+    ] = None,
+    color_id: Annotated[
+        str | None,
+        "Google Calendar color ID (1-11).",
+    ] = None,
+    recurrence: Annotated[
+        list[str] | None,
+        "List of RRULE strings, e.g. [\"RRULE:FREQ=WEEKLY;BYDAY=MO\"].",
+    ] = None,
     ctx: Context | None = None,
 ) -> list[TextContent]:
     """Creates a new calendar event."""
@@ -101,7 +121,6 @@ async def create_calendar_event(
         # Extract date/time values properly depending on whether it's an all-day event or timed event
         start_time = start_datetime
         end_time = end_datetime
-        timezone = None  # Default timezone will be handled by the calendar service
 
         created_event = calendar_service.create_event(
             summary=summary,
@@ -112,6 +131,10 @@ async def create_calendar_event(
             attendees=attendees,
             calendar_id=calendar_id,
             timezone=timezone,
+            transparency=transparency,
+            reminders=reminders,
+            color_id=color_id,
+            recurrence=recurrence,
         )
 
         if not created_event:
@@ -189,6 +212,22 @@ async def update_calendar_event(
         str | None,
         "Timezone for the event (e.g., 'America/New_York', 'Asia/Tokyo').",
     ] = None,
+    transparency: Annotated[
+        str | None,
+        "Event visibility: 'transparent' (show as free) or 'opaque' (show as busy).",
+    ] = None,
+    reminders: Annotated[
+        dict | None,
+        "Reminder config, e.g. {\"useDefault\": false, \"overrides\": []} to disable all reminders.",
+    ] = None,
+    color_id: Annotated[
+        str | None,
+        "Google Calendar color ID (1-11).",
+    ] = None,
+    recurrence: Annotated[
+        list[str] | None,
+        "List of RRULE strings, e.g. [\"RRULE:FREQ=WEEKLY;BYDAY=MO\"].",
+    ] = None,
     ctx: Context | None = None,
 ) -> list[TextContent]:
     """Updates an existing calendar event. Only provided fields will be updated."""
@@ -209,6 +248,10 @@ async def update_calendar_event(
             attendees=attendees,
             timezone=timezone,
             calendar_id=calendar_id,
+            transparency=transparency,
+            reminders=reminders,
+            color_id=color_id,
+            recurrence=recurrence,
         )
 
         if updated_event:

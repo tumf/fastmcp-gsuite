@@ -33,6 +33,8 @@ from .gmail_drive_tools import (
     save_gmail_attachment_to_drive,
 )
 from .gmail_tools import (
+    archive_gmail_message,
+    batch_modify_gmail_messages,
     bulk_get_gmail_emails,
     bulk_save_gmail_attachments,
     create_gmail_draft,
@@ -40,6 +42,8 @@ from .gmail_tools import (
     delete_gmail_draft,
     get_email_details,
     get_gmail_labels,
+    mark_gmail_message_read,
+    modify_gmail_message,
     query_gmail_emails,
 )
 from .settings import settings  # Import settings to ensure it's loaded
@@ -100,6 +104,16 @@ mcp.tool(description="Create a draft email in Gmail.")(create_gmail_draft)
 mcp.tool(description="Delete a draft email from Gmail.")(delete_gmail_draft)
 
 mcp.tool(description="Create a reply to an existing Gmail email message.")(create_gmail_reply)
+
+mcp.tool(description="Modify labels on a Gmail message (add or remove labels).")(modify_gmail_message)
+
+mcp.tool(description="Mark a Gmail message as read.")(mark_gmail_message_read)
+
+mcp.tool(description="Archive a Gmail message (remove from inbox).")(archive_gmail_message)
+
+mcp.tool(
+    description="Modify labels on multiple Gmail messages in a single batch request (max 1000)."
+)(batch_modify_gmail_messages)
 
 # get_gmail_attachment is deprecated - use save_gmail_attachment_to_drive instead
 # to avoid returning large base64 data that consumes context
