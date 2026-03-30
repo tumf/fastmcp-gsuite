@@ -2,6 +2,7 @@ import json
 import logging
 from typing import Annotated
 
+from pydantic import BeforeValidator
 from fastmcp import Context
 from mcp.types import TextContent
 
@@ -10,6 +11,23 @@ from . import gmail as gmail_impl
 from .common import get_user_id_description
 
 logger = logging.getLogger(__name__)
+
+
+def _coerce_str_list(v: object) -> object:
+    """Accept a JSON-encoded string and parse it into a list before Pydantic validation."""
+    if isinstance(v, str):
+        try:
+            parsed = json.loads(v)
+            if isinstance(parsed, list):
+                return parsed
+        except (json.JSONDecodeError, ValueError):
+            pass
+        return [v]
+    return v
+
+
+# Type alias for list[str] params that may arrive as JSON strings from MCP clients
+StrList = Annotated[list[str], BeforeValidator(_coerce_str_list)]
 
 
 # Gmail related tools
@@ -300,26 +318,11 @@ async def create_gmail_reply(
         raise RuntimeError(error_msg) from e
 
 
-def _ensure_list(value: list[str] | str | None) -> list[str] | None:
-    """Coerce a value to a list of strings. Handles JSON strings passed by MCP clients."""
-    if value is None:
-        return None
-    if isinstance(value, str):
-        try:
-            parsed = json.loads(value)
-            if isinstance(parsed, list):
-                return [str(item) for item in parsed]
-        except (json.JSONDecodeError, ValueError):
-            pass
-        return [value]
-    return value
-
-
 async def modify_gmail_message(
     user_id: Annotated[str, get_user_id_description()],
     message_id: Annotated[str, "The ID of the Gmail message to modify."],
-    add_label_ids: Annotated[list[str] | None, "Label IDs to add to the message."] = None,
-    remove_label_ids: Annotated[list[str] | None, "Label IDs to remove from the message."] = None,
+    add_label_ids: Annotated[StrList | None, "Label IDs to add to the message."] = None,
+    remove_label_ids: Annotated[StrList | None, "Label IDs to remove from the message."] = None,
     ctx: Context | None = None,
 ) -> list[TextContent]:
     """Modifies labels on a Gmail message (add or remove labels)."""
@@ -330,8 +333,8 @@ async def modify_gmail_message(
         gmail_service = gmail_impl.GmailService(g_service)
         result = gmail_service.modify_message(
             message_id=message_id,
-            add_label_ids=_ensure_list(add_label_ids),
-            remove_label_ids=_ensure_list(remove_label_ids),
+            add_label_ids=add_label_ids,
+            remove_label_ids=remove_label_ids,
         )
         if not result:
             if ctx:
@@ -378,9 +381,9 @@ async def archive_gmail_message(
 
 async def batch_modify_gmail_messages(
     user_id: Annotated[str, get_user_id_description()],
-    message_ids: Annotated[list[str], "List of Gmail message IDs to modify (max 1000)."],
-    add_label_ids: Annotated[list[str] | None, "Label IDs to add to all messages."] = None,
-    remove_label_ids: Annotated[list[str] | None, "Label IDs to remove from all messages."] = None,
+    message_ids: Annotated[StrList, "List of Gmail message IDs to modify (max 1000)."],
+    add_label_ids: Annotated[StrList | None, "Label IDs to add to all messages."] = None,
+    remove_label_ids: Annotated[StrList | None, "Label IDs to remove from all messages."] = None,
     ctx: Context | None = None,
 ) -> list[TextContent]:
     """Modifies labels on multiple Gmail messages in a single batch request."""
@@ -390,9 +393,9 @@ async def batch_modify_gmail_messages(
         g_service = auth_helper.get_gmail_service(user_id)
         gmail_service = gmail_impl.GmailService(g_service)
         success = gmail_service.batch_modify_messages(
-            message_ids=_ensure_list(message_ids) or [],
-            add_label_ids=_ensure_list(add_label_ids),
-            remove_label_ids=_ensure_list(remove_label_ids),
+            message_ids=message_ids,
+            add_label_ids=add_label_ids,
+            remove_label_ids=remove_label_ids,
         )
         if success:
             if ctx:
