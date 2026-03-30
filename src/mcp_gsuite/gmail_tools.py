@@ -300,6 +300,21 @@ async def create_gmail_reply(
         raise RuntimeError(error_msg) from e
 
 
+def _ensure_list(value: list[str] | str | None) -> list[str] | None:
+    """Coerce a value to a list of strings. Handles JSON strings passed by MCP clients."""
+    if value is None:
+        return None
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+            if isinstance(parsed, list):
+                return [str(item) for item in parsed]
+        except (json.JSONDecodeError, ValueError):
+            pass
+        return [value]
+    return value
+
+
 async def modify_gmail_message(
     user_id: Annotated[str, get_user_id_description()],
     message_id: Annotated[str, "The ID of the Gmail message to modify."],
@@ -315,8 +330,8 @@ async def modify_gmail_message(
         gmail_service = gmail_impl.GmailService(g_service)
         result = gmail_service.modify_message(
             message_id=message_id,
-            add_label_ids=add_label_ids,
-            remove_label_ids=remove_label_ids,
+            add_label_ids=_ensure_list(add_label_ids),
+            remove_label_ids=_ensure_list(remove_label_ids),
         )
         if not result:
             if ctx:
@@ -375,9 +390,9 @@ async def batch_modify_gmail_messages(
         g_service = auth_helper.get_gmail_service(user_id)
         gmail_service = gmail_impl.GmailService(g_service)
         success = gmail_service.batch_modify_messages(
-            message_ids=message_ids,
-            add_label_ids=add_label_ids,
-            remove_label_ids=remove_label_ids,
+            message_ids=_ensure_list(message_ids) or [],
+            add_label_ids=_ensure_list(add_label_ids),
+            remove_label_ids=_ensure_list(remove_label_ids),
         )
         if success:
             if ctx:
