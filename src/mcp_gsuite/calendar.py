@@ -102,6 +102,10 @@ class CalendarService:
         send_notifications: bool = True,
         timezone: str | None = None,
         calendar_id: str = "primary",
+        transparency: str | None = None,
+        reminders: dict | None = None,
+        color_id: str | None = None,
+        recurrence: list[str] | None = None,
     ) -> dict | None:
         """
         Create a new calendar event.
@@ -115,6 +119,10 @@ class CalendarService:
             attendees (list, optional): List of attendee email addresses
             send_notifications (bool): Whether to send notifications to attendees
             timezone (str, optional): Timezone for the event (e.g. 'America/New_York')
+            transparency (str, optional): 'transparent' (free) or 'opaque' (busy)
+            reminders (dict, optional): Reminder config, e.g. {"useDefault": False, "overrides": []}
+            color_id (str, optional): Google Calendar color ID (1-11)
+            recurrence (list[str], optional): RRULE strings, e.g. ["RRULE:FREQ=WEEKLY;BYDAY=MO"]
 
         Returns:
             dict: Created event data or None if creation fails
@@ -139,8 +147,15 @@ class CalendarService:
             if description:
                 event["description"] = description
             if attendees:
-                # Type annotation to clarify the expected structure
                 event["attendees"] = [{"email": email} for email in attendees]  # type: ignore
+            if transparency is not None:
+                event["transparency"] = transparency
+            if reminders is not None:
+                event["reminders"] = reminders
+            if color_id is not None:
+                event["colorId"] = color_id
+            if recurrence is not None:
+                event["recurrence"] = recurrence
 
             # Create the event
             created_event = (
@@ -201,6 +216,10 @@ class CalendarService:
         send_notifications: bool = True,
         timezone: str | None = None,
         calendar_id: str = "primary",
+        transparency: str | None = None,
+        reminders: dict | None = None,
+        color_id: str | None = None,
+        recurrence: list[str] | None = None,
     ) -> dict | None:
         """
         Update an existing calendar event.
@@ -216,6 +235,10 @@ class CalendarService:
             send_notifications (bool): Whether to send notifications to attendees
             timezone (str, optional): Timezone for the event (e.g. 'America/New_York')
             calendar_id (str): Calendar ID (default: 'primary')
+            transparency (str, optional): 'transparent' (free) or 'opaque' (busy)
+            reminders (dict, optional): Reminder config, e.g. {"useDefault": False, "overrides": []}
+            color_id (str, optional): Google Calendar color ID (1-11)
+            recurrence (list[str], optional): RRULE strings, e.g. ["RRULE:FREQ=WEEKLY;BYDAY=MO"]
 
         Returns:
             dict: Updated event data or None if update fails
@@ -235,6 +258,14 @@ class CalendarService:
                 existing_event["description"] = description
             if attendees is not None:
                 existing_event["attendees"] = [{"email": email} for email in attendees]
+            if transparency is not None:
+                existing_event["transparency"] = transparency
+            if reminders is not None:
+                existing_event["reminders"] = reminders
+            if color_id is not None:
+                existing_event["colorId"] = color_id
+            if recurrence is not None:
+                existing_event["recurrence"] = recurrence
 
             # Update time fields if provided
             if start_time is not None:

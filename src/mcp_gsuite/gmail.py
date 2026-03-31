@@ -392,6 +392,73 @@ class GmailService:
             logging.error(traceback.format_exc())
             return None
 
+    def modify_message(
+        self,
+        message_id: str,
+        add_label_ids: list[str] | None = None,
+        remove_label_ids: list[str] | None = None,
+    ) -> dict | None:
+        """
+        Modify labels on a Gmail message.
+
+        Args:
+            message_id (str): The ID of the message to modify
+            add_label_ids (list[str], optional): Label IDs to add
+            remove_label_ids (list[str], optional): Label IDs to remove
+
+        Returns:
+            dict: Modified message data or None if modification fails
+        """
+        try:
+            body: dict = {}
+            if add_label_ids:
+                body["addLabelIds"] = add_label_ids
+            if remove_label_ids:
+                body["removeLabelIds"] = remove_label_ids
+
+            result = (
+                self.service.users()
+                .messages()
+                .modify(userId="me", id=message_id, body=body)
+                .execute()
+            )
+            return result
+        except Exception as e:
+            logging.error(f"Error modifying message {message_id}: {e!s}")
+            logging.error(traceback.format_exc())
+            return None
+
+    def batch_modify_messages(
+        self,
+        message_ids: list[str],
+        add_label_ids: list[str] | None = None,
+        remove_label_ids: list[str] | None = None,
+    ) -> bool:
+        """
+        Modify labels on multiple Gmail messages in a single request.
+
+        Args:
+            message_ids (list[str]): Message IDs to modify (max 1000)
+            add_label_ids (list[str], optional): Label IDs to add
+            remove_label_ids (list[str], optional): Label IDs to remove
+
+        Returns:
+            bool: True if modification was successful, False otherwise
+        """
+        try:
+            body: dict = {"ids": message_ids[:1000]}
+            if add_label_ids:
+                body["addLabelIds"] = add_label_ids
+            if remove_label_ids:
+                body["removeLabelIds"] = remove_label_ids
+
+            self.service.users().messages().batchModify(userId="me", body=body).execute()
+            return True
+        except Exception as e:
+            logging.error(f"Error batch modifying messages: {e!s}")
+            logging.error(traceback.format_exc())
+            return False
+
     def get_attachment(self, message_id: str, attachment_id: str) -> dict | None:
         """
         Retrieves a Gmail attachment by its ID.
